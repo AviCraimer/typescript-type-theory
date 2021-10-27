@@ -1,0 +1,37 @@
+{
+    "name": "typescript-type-theory",
+    "version": "1.0.0",
+    "description": "Code for the video series TypeScript Type Theory",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "build": "node ./build e01",
+        "start": "nodemon ./js-compiled/node/index.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/AviCraimer/typescript-type-theory.git"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/AviCraimer/typescript-type-theory/issues"
+    },
+    "homepage": "https://github.com/AviCraimer/typescript-type-theory#readme",
+    "dependencies": {
+        "lodash": "^4.17.21",
+        "typescript": "^4.4.4"
+    },
+    "devDependencies": {
+        "@types/fs-extra": "^9.0.13",
+        "@types/lodash": "^4.14.176",
+        "@types/node": "^16.11.6",
+        "esbuild": "^0.13.9",
+        "fs-extra": "^10.0.0",
+        "glob": "^7.2.0",
+        "node-watch": "^0.7.2",
+        "nodemon": "^2.0.14",
+        "sass": "^1.43.3"
+    }
+}
