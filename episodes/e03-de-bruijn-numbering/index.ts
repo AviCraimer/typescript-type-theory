@@ -1,84 +1,37 @@
-console.log("\n".repeat(15));
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-// TypeScript Type Theory
-//
-// Episode 1
-//
-// LAMBDA EXPRESSIONS
-//
-// Created by Avi Craimer
-//
-//
-type Lambda = FreeVariable | Application | Abstraction;
-//                 x       | x(y)        | [λ˚x.y(˚x)]
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-type Variable = string;
-type FreeVariable = Variable;
+import { Lambda } from "../e02-lambda-reduction/lambdaExpressions";
 
-//Bound Variable
-type VariableBound = `˚{string}`;
+console.log("De Bruijn Numbering");
 
-function isBound(x: any) {
-    if (typeof x === "string") {
-        return x.indexOf("˚") === 0;
-    } else {
-        return false;
-    }
-}
+export type Lambda = Variable | Application | Abstraction;
 
-function Var(name: string, free?: true): FreeVariable;
-function Var(name: string, free?: false): VariableBound;
-function Var(name: string, free?: undefined): FreeVariable;
-function Var(name: string, free?: boolean): Variable {
-    free = free ?? true;
-    name = name.replaceAll("˚", "");
-    //Add symbol for bound variables
-    name = free ? name : `˚${name}`;
-
-    return name;
-}
-
-//Define some commonly used free variables
-const x = "x";
-const y = "y";
-const z = "z";
-const w = "w";
-const f = "f";
-const g = "g";
-const h = "h";
-
-const xBound = Var("x", false);
-
-type Application = Readonly<{
-    role: "Application";
-    func: Lambda;
-    argument: Lambda;
+type RootLambda = Lambda & {
+    freeVars: string[];
     toString: () => string;
-}>;
+    isRoot: true;
+};
 
-const apply = (...args: Lambda[]): Application => {
+type EmbeddedLambda = Lambda & {
+    rootLambda: RootLambda;
+    isRoot: false;
+};
+
+export type Variable = {
+    readonly role: "Variable";
+    referenceNum: number;
+};
+
+export type Application = {
+    readonly role: "Application";
+    func: EmbeddedLambda;
+    argument: EmbeddedLambda;
+};
+
+export type Abstraction = {
+    readonly role: "Abstraction";
+    body: EmbeddedLambda;
+};
+
+export const apply = (...args: Lambda[]): Application => {
     if (args.length < 2) {
         throw new Error("Cannot apply with fewer than two lambda arguments");
     }
@@ -105,13 +58,6 @@ const apply = (...args: Lambda[]): Application => {
 
 // console.log(apply(x, y, apply(z, w)).toString());
 
-type Abstraction = Readonly<{
-    role: "Abstraction";
-    parameter: VariableBound;
-    body: Lambda;
-    toString: () => string;
-}>;
-
 // Any object we can form that fits this type will be a valid lambda expression.
 function toString(this: Abstraction | Application): string {
     if (this.role === "Abstraction") {
@@ -126,7 +72,7 @@ function toString(this: Abstraction | Application): string {
 }
 
 //To create an abstraction we need substitution.
-const substitution = (
+export const substitution = (
     expression: Lambda,
     replace: Variable,
     substitute: Lambda | VariableBound
@@ -150,6 +96,10 @@ const substitution = (
 
         return {
             ...expression,
+            parameter:
+                isBound(substitute) && replace === expression.parameter
+                    ? (substitute as VariableBound)
+                    : expression.parameter,
             body: substitution(body, replace, substitute),
         };
     } else if (expression.role === "Application") {
@@ -166,7 +116,10 @@ const substitution = (
     return nothing;
 };
 
-const abstract = (variable: FreeVariable, expression: Lambda): Abstraction => {
+export const abstract = (
+    variable: FreeVariable,
+    expression: Lambda
+): Abstraction => {
     const parameter = Var(variable, false);
     const body = substitution(expression, variable, parameter);
 
@@ -178,33 +131,8 @@ const abstract = (variable: FreeVariable, expression: Lambda): Abstraction => {
     };
 };
 
-// console.log(apply(f, x).toString());
-// console.log(abstract(x, apply(f, x)).toString());
-// console.log(abstract(f, apply(f, x)).toString());
-
-// console.log(
-//     apply(x, abstract(f, abstract(x, apply(f, x, y))), z, w).toString()
-// );
-
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-///
-
-console.log("\n\n\n\n");
+export const print = (...objs: any[]) => {
+    objs.forEach((obj) => console.log(obj.toString()));
+};
 
 export {};

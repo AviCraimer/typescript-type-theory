@@ -5,7 +5,7 @@
     "main": "index.js",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
-        "build": "node ./build e01",
+        "build": "node ./build e03",
         "start": "nodemon ./js-compiled/node/index.js"
     },
     "repository": {

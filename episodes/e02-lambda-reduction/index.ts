@@ -116,7 +116,30 @@ console.log(beta1(apply(badSubstitution, z)).toString());
 //
 //
 
-const getUniqueParamNames = (expression: Lambda): string[] => {
+const getUniqueParamNames = (expression: Lambda): VariableBound[] => {
+    const getParamsInExpression = (expression: Lambda): VariableBound[] => {
+        if (typeof expression === "string") {
+            return []; //By not returning bound variables at the variable level, we avoid capturing bound variables which come from a broader scope than the expression.
+        }
+        if (expression.role === "Application") {
+            const { func, argument } = expression;
+            return [
+                ...getParamsInExpression(func),
+                ...getParamsInExpression(argument),
+            ];
+        } else if (expression.role === "Abstraction") {
+            const { parameter, body } = expression;
+            return [parameter, ...getParamsInExpression(body)];
+        }
+        let nothing: never = expression;
+        return expression;
+    };
+
+    //Get unique values
+    return [...new Set(getParamsInExpression(expression))];
+};
+
+const OLD_getUniqueParamNames = (expression: Lambda): VariableBound[] => {
     const getParamsInExpression = (expression: Lambda): VariableBound[] => {
         if (typeof expression === "string") {
             return isBound(expression) ? [expression as VariableBound] : [];
@@ -157,13 +180,26 @@ export const beta = (() => {
             //Handle bound variable renaming
 
             const abstractionParameters = getUniqueParamNames(func);
+            const argumentParameters = getUniqueParamNames(argument);
+            const allParamsUsed = [
+                ...abstractionParameters,
+                ...argumentParameters,
+            ];
             let newArg = argument;
             abstractionParameters.forEach((parameter) => {
-                newArg = substitution(
-                    newArg,
-                    parameter,
-                    `${parameter}_${count()}`
-                );
+                if (argumentParameters.includes(parameter)) {
+                    let newParameter: VariableBound;
+                    for (let i = 1; true; i++) {
+                        const proposed = `${parameter}${"'".repeat(
+                            i
+                        )}` as unknown as VariableBound;
+                        if (!argumentParameters.includes(proposed)) {
+                            newParameter = proposed;
+                            break;
+                        }
+                    }
+                    newArg = substitution(newArg, parameter, newParameter);
+                }
             });
 
             return substitution(body, parameter, newArg);
@@ -294,25 +330,28 @@ const normalizeApplicative = (
 
     let counter = 0;
     let current = expression;
+
     let prev: Lambda = "___EMPTY___";
-    while (counter < maxSteps && !isEqual(current, prev)) {
+    while (!isEqual(current, prev)) {
         console.log(`${counter + 1} - ${current.toString()}`);
         prev = current;
         current = step(current);
         counter++;
+        if (counter >= maxSteps) {
+            const msg = `Could not normalize in ${maxSteps} steps`;
+            throw new Error(msg);
+        }
     }
 
-    if (current.normalized === false) {
-        throw new Error(`Could not normalize in ${maxSteps} steps`);
-    }
-
-    return current.reduced;
+    return current;
 };
 
 console.log("\nNormalize");
-const exp2 = apply(abstract(x, apply(x, y)), apply(abstract(z, z), f));
+const exp2 = apply(abstract(x, apply(x, y)), apply(abstract(z, z), f, y));
+const M = abstract(f, apply(f, f));
+// normalizeApplicative(exp2, true);
 
-normalizeApplicative(exp2, true);
+normalizeApplicative(apply(M, M), true, 5);
 
 //
 //
