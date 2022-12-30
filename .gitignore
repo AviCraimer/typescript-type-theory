@@ -1,3 +1,5 @@
+js-compiled/**/*
+
 # Logs
 logs
 *.log

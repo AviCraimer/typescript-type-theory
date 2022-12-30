@@ -21,13 +21,15 @@
     "homepage": "https://github.com/AviCraimer/typescript-type-theory#readme",
     "dependencies": {
         "lodash": "^4.17.21",
-        "typescript": "^4.4.4"
+        "typescript": "^4.9.4",
+        "uuid": "^9.0.0"
     },
     "devDependencies": {
         "@types/fs-extra": "^9.0.13",
         "@types/lodash": "^4.14.176",
         "@types/node": "^16.11.6",
-        "esbuild": "^0.13.9",
+        "@types/uuid": "^9.0.0",
+        "esbuild": "^0.16.12",
         "fs-extra": "^10.0.0",
         "glob": "^7.2.0",
         "node-watch": "^0.7.2",
