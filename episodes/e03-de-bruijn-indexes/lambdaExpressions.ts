@@ -67,24 +67,27 @@ const freeVarTemplate: FreeVariable = {
     deBruijnNumber: 0,
     eq: lambdaEqMethod,
 };
+const boundVarChars = ["𝓍", "𝓎", "𝓏", "𝓌"] as const;
 
 export function Var(name: string): FreeVariable {
-    // The cursive '𝓍' unicode symbol is reserved for bound variable display
-    name = name.replaceAll("𝓍", "");
+    // Enforce that no free variable can use the special symbols used for bound variables. This is more for readability than functionality, since a free variable with the name 𝓍 would not be equal to a bound variable with that display symbol.
+    boundVarChars.forEach((char) => {
+        name = name.replaceAll(char, "");
+    });
 
     return { ...freeVarTemplate, name };
 }
 
 const getBoundVarSymbol = (index: number) => {
-    const unicodeSymbols = ["𝓍", "𝓎", "𝓏", "𝓌"];
-
-    const length = unicodeSymbols.length;
+    const length = boundVarChars.length;
 
     const numeral = Math.ceil(index / length - 1);
 
-    const symIndex = index % length > 0 ? (index % length) - 1 : length;
+    const symIndex = index % length > 0 ? (index % length) - 1 : length - 1;
 
-    return `${unicodeSymbols[symIndex]}${numeral > 0 ? numberal : ""}`;
+    console.log(index, symIndex);
+
+    return `${boundVarChars[symIndex]}${numeral > 0 ? numeral : ""}`;
 };
 
 const boundVarTemplate: BoundVariable = {
@@ -159,55 +162,12 @@ const isFree = (exp: Lambda): exp is FreeVariable =>
 const isVariable = (exp: Lambda): exp is Variable =>
     isFree(exp) || isBound(exp);
 
-// To create an abstraction we need substitution.
-// export const substitution = (
-//     expression: Lambda,
-//     replace: Variable,
-//     substitute: Lambda,
-// ): Lambda => {
-//     if (isVariable(expression)) {
-//         //Variable
-//         if (expression.eq(replace)) {
-//             //You are replacing the expression which is a free variable
-//             if (isFree(replace) && !isBound(substitute)) {
-//                 throw new Error(
-//                     "You can only replace a free variable with a bound variable."
-//                 );
-//             }
-//             //Substitutes for a variable
-//             return substitute;
-//         } else {
-//             //Otherwise return it unmodified
-//             return expression;
-//         }
-//     } else if (expression.role === "Abstraction") {
-//         const {  body } = expression;
-
-//         return {
-//             ...expression,
-//             parameter:
-//                 isBound(substitute) && replace === expression.parameter
-//                     ? (substitute as VariableBound)
-//                     : expression.parameter,
-//             body: substitution(body, replace, substitute),
-//         };
-//     } else if (expression.role === "Application") {
-//         //Application
-//         const { func, argument } = expression;
-
-//         return {
-//             ...expression,
-//             func: substitution(func, replace, substitute),
-//             argument: substitution(argument, replace, substitute),
-//         };
-//     }
-//     const nothing: never = expression; //So TypeScript knows undefined will never be implicitly returned by the function.
-//     return nothing;
-// };
-
-//In this case, we are just replacing free variables with bound variables. We don't need to worry about re-indexing.
+//In this case, since we are just replacing free variables with bound variables. We don't need to worry about updating the De Bruijn Numbers.
 const freeVarSubstitution = (body: Lambda, variable: FreeVariable) => {
+    //Any time a new lambda is introduced we increment the De Bruign Number by 1 and use this as the index for the lambda's bound variable.
     const bound = boundVar(body.getDeBruijnNumber() + 1);
+
+    //We recursively generate a new expression with the bound variable substituting the given free variable.
     const inner = (exp: Lambda): Lambda => {
         if (exp.eq(variable)) {
             return bound;
@@ -242,6 +202,7 @@ const abstractionTemplate: Abstraction = {
         return exp.body.getDeBruijnNumber() + 1;
     }),
     eq: lambdaEqMethod,
+    //Returns the bound variable for the expression
     getParameter() {
         return boundVar(this.getDeBruijnNumber());
     },
@@ -251,15 +212,11 @@ export const abstract = (
     prevExpression: Lambda,
     variable: FreeVariable
 ): Abstraction => {
-    //This is the deBruijnNumber of the new lambda abstraction, which is also, the deBruijnIndex of it's bound variable instances. This number creates the binding link between the lambda abstraction and it's variables.
+    //This is the DeBruijn number of the new lambda abstraction, which is also, the DeBruijn index of it's bound variable instances. This number creates the binding link between the lambda abstraction and it's variables.
 
     const body = freeVarSubstitution(prevExpression, variable);
 
     return { ...abstractionTemplate, body };
-};
-
-export const print = (...objs: any[]) => {
-    objs.forEach((obj) => console.log(obj.toString()));
 };
 
 ///Tests
@@ -270,7 +227,10 @@ const w = Var("w");
 
 const appExpression = apply(x, y, apply(z, w));
 const absX = abstract(appExpression, Var("x"));
-const absY = abstract(absX, Var("y"));
+const absY = abstract(
+    abstract(abstract(abstract(absX, Var("y")), Var("y")), Var("y")),
+    Var("y")
+);
 
 console.log(appExpression.toString());
 

@@ -33,3 +33,8 @@ export const objEq =
             }
         );
     };
+
+
+export const print = (...objs: any[]) => {
+    objs.forEach((obj) => console.log(obj.toString()));
+};
