@@ -5,7 +5,7 @@
     "main": "index.js",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
-        "build": "node ./build e03",
+        "build": "node ./build",
         "start": "nodemon ./js-compiled/node/index.js"
     },
     "repository": {
@@ -21,6 +21,7 @@
     "homepage": "https://github.com/AviCraimer/typescript-type-theory#readme",
     "dependencies": {
         "lodash": "^4.17.21",
+        "omit-deep-lodash": "^1.1.7",
         "typescript": "^4.9.4",
         "uuid": "^9.0.0"
     },
