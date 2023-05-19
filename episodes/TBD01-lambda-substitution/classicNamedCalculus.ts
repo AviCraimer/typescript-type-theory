@@ -1,31 +1,32 @@
 //New as of May 17 2023
 
-type LambdaExpr = Abstraction | Variable | Application;
+export type LambdaExpr = Abstraction | Variable | Application;
 
-type LambdaChild<L extends LambdaExpr = LambdaExpr> = {
+export type LambdaChild<L extends LambdaExpr = LambdaExpr> = {
     childFreeVars: Variable[]; //Used to check if a variable is fresh for a replacement
     childExpr: L;
 };
 
-type BaseLambda<M extends {}> = {
+export type BaseLambda<M extends {}> = {
     children: LambdaChild[];
     meta: M; // Pass in metalanguage info which can be used to add types, etc.
 };
 
-type Variable<M extends { syntax: "variable" } = { syntax: "variable" }> =
-    BaseLambda<M> & {
-        name: string;
-        children: never[];
-    };
+export type Variable<
+    M extends { syntax: "variable" } = { syntax: "variable" }
+> = BaseLambda<M> & {
+    name: string;
+    children: never[];
+};
 
-type Abstraction<
+export type Abstraction<
     M extends { syntax: "abstraction" } = { syntax: "abstraction" }
 > = BaseLambda<M> & {
     boundVar: Variable;
     children: [body: LambdaChild];
 };
 
-type Application<
+export type Application<
     M extends { syntax: "application" } = { syntax: "application" }
 > = BaseLambda<M> & {
     children: [func: LambdaChild, argument: LambdaChild];
@@ -246,9 +247,12 @@ export const printChildFV = (lambda: LambdaExpr) => {
     console.log(childFVsToString(lambda));
 };
 
-export const appBranches = (
-    app: Application
-): [func: LambdaExpr, arg: LambdaExpr] => {
+export const appBranches = <App extends Application>(
+    app: App
+): [
+    func: App["children"][0]["childExpr"],
+    arg: App["children"][1]["childExpr"]
+] => {
     return [app.children[0].childExpr, app.children[1].childExpr];
 };
 
@@ -312,6 +316,7 @@ export const substitutionMethods: LambdaMethods<
         return varEq(variable, varToReplace) ? replacementExpr : variable;
     },
     abstraction: (abs, inner, replacementExpr, varToReplace) => {
+        //A.K.A.: The hard part!
         const { boundVar } = abs;
 
         let replacementChildFreeVars = replacementExpr.children
@@ -330,7 +335,7 @@ export const substitutionMethods: LambdaMethods<
             ///Does not meet freshness condition
             varIn(boundVar, replacementChildFreeVars)
         ) {
-            //The fresh var should be distinct from the bound variables in replacement. It's okay if it is the same as an inner bound variale since it will just be shadowed as normal.
+            //The fresh var should be distinct from the bound variables in replacement. It's okay if it is the same as an inner bound variable since it will just be shadowed as normal.
             freshVar = getFreshVar(replacementChildFreeVars, boundVar.name);
 
             //This has to be done on the body because it will be skipped in substitution if it is done on the abstraction with that bound var
@@ -354,144 +359,171 @@ export const substitutionMethods: LambdaMethods<
 
 export const substitute = mkLambdaFn(substitutionMethods);
 
-// const subBoundMethods: LambdaMethods<
-//     LambdaExpr,
-//     [boundVarToReplace: BoundVarSubExpr, replacement: LambdaExpr]
-// > = {
-//     boundVar: (lambda, _, boundVarToReplace, replacement) => {
-//         if (lambda === boundVarToReplace) {
-//             return replacement;
-//         } else {
-//             return lambda;
-//         }
-//     },
-//     freeVar: (lambda) => {
-//         return lambda;
-//     },
-//     application: (lambda, inner) => {
-//         return application(inner(lambda.argument), inner(lambda.func));
-//     },
-//     abstraction: (lambda, inner, boundVarToReplace) => {
-//         if (lambda.boundVar === boundVarToReplace) {
-//             //We don't substitute into inner lambdas with the same bound variable name, since the variables are always bound to the nearest lambda with the same name. This is called 'variable shadowing' in programming.
-//             return lambda;
-//         } else {
-//             return {
-//                 ...lambda,
-//                 body: inner(lambda),
-//             };
-//         }
-//     },
-//     substitution: (lambda) => {
-//         //Not sure what are the algebraic laws of substituting into a substitution
+export const alphaEq = (
+    lambda1: LambdaExpr,
+    lambda2: LambdaExpr,
+    boundVarCount: number = 0
+): Boolean => {
+    if (isAbs(lambda1) && isAbs(lambda2)) {
+        const canonicalBoundVar = Var("" + boundVarCount, true);
+        const body1 = lambda1.children[0].childExpr;
+        const body2 = lambda2.children[0].childExpr;
+        const newBody1 = substitute(body1, canonicalBoundVar, lambda1.boundVar);
+        const newBody2 = substitute(body2, canonicalBoundVar, lambda2.boundVar);
+        console.log("1.");
+        printExpr(lambda1);
+        printExpr(newBody1);
+        console.log(2);
+        printExpr(lambda2);
+        printExpr(newBody2);
+        return alphaEq(newBody1, newBody2, boundVarCount + 1);
+    } else if (isApp(lambda1) && isApp(lambda2)) {
+        const [func1, arg1] = appBranches(lambda1);
+        const [func2, arg2] = appBranches(lambda2);
+        return (
+            alphaEq(func1, func2, boundVarCount) &&
+            alphaEq(arg1, arg2, boundVarCount)
+        );
+    } else if (isVar(lambda1) && isVar(lambda2)) {
+        return lambda1.name === lambda2.name;
+    } else {
+        return false;
+    }
+};
 
-//         //TODO to do TBD
-//         return lambda;
-//     },
-// };
-
-// export const subForBound = mkLambdaFn(subBoundMethods);
-
+//This type defines a beta reducible lambda expression
 type Redex = Application & {
     children: [LambdaChild<Abstraction>, LambdaChild];
 };
 
-//A beta reducible lambda expression is called a redex
-// const isRedex = (lambda: LambdaExpr): lambda is Redex => {
-//     return isApp(lambda) && isAbs(lambda.func);
-// };
+const isRedex = (lambda: LambdaExpr): lambda is Redex => {
+    if (isApp(lambda)) {
+        const [func, arg] = appBranches(lambda);
+        if (isAbs(func)) {
+            return true;
+        }
+    }
+    return false;
+};
 
-// const betaStepMethods: LambdaMethods<LambdaExpr, []> = {
-//     boundVar: (lambda) => {
-//         return lambda;
-//     },
-//     freeVar: (lambda) => {
-//         return lambda;
-//     },
-//     application: (lambda, inner) => {
-//         if (isRedex(lambda)) {
-//             const abs = lambda.func;
+export const betaStep = (redex: Redex) => {
+    const [func, arg] = appBranches(redex);
+    const body = func.children[0].childExpr;
+    return substitute(body, arg, func.boundVar);
+};
 
-//             return subForBound(abs.body, abs.boundVar, lambda.argument);
-//         } else {
-//             return application;
-//         }
-//     },
-//     abstraction: (lambda, inner) => {
-//         return {
-//             ...lambda,
-//             body: inner(lambda),
-//         };
-//     },
-//     substitution: (lambda) => {
-//         //Not sure what are the algebraic laws of substituting into a substitution
+export const betaReduce = (lambda: LambdaExpr, maxSteps = 20) => {
+    const tracker = { hasBeenReduced: false, count: 0 };
 
-//         //TODO to do TBD
-//         return lambda;
-//     },
-// };
+    const inner = (lambda: LambdaExpr): LambdaExpr => {
+        if (isRedex(lambda)) {
+            tracker.hasBeenReduced = true;
+            return betaStep(lambda);
+        } else if (isApp(lambda)) {
+            const [func, arg] = appBranches(lambda);
+            return application(inner(func), inner(arg));
+        } else if (isAbs(lambda)) {
+            const body = lambda.children[0].childExpr;
+            return abstraction(lambda.boundVar, inner(body));
+        } else if (isVar(lambda)) {
+            return lambda;
+        }
+        let x: never = lambda;
+        return x;
+    };
 
-// export const betaStep = mkLambdaFn(betaStepMethods); //Need to test it!!
+    let current = lambda;
+    while (
+        tracker.count === 0 ||
+        (tracker.hasBeenReduced === true && tracker.count < maxSteps)
+    ) {
+        tracker.hasBeenReduced = false;
 
-// export const betaReduce = (lambda: LambdaExpr, maxSteps = 10, log = true) => {
-//     let count = 0;
-//     let prev: LambdaExpr = lambda;
+        current = inner(current);
 
-//     while (count < maxSteps) {
-//         const current = betaStep(lambda);
+        tracker.count = tracker.count + 1;
+        if (tracker.count === maxSteps) {
+            console.log("max steps reached");
+        }
+    }
+    return current;
+};
 
-//         printExpr(prev);
+// To do
+// Make get free vars function rather than tracking free vars in children
+// Simpilifies the structure of many functions, allows mapping directly over children expressions
+// Make a nicer interface for building expressions
 
-//         if (lambdaToString(current) === lambdaToString(prev)) {
-//             return current;
-//         }
-//         prev = current;
-//         count++;
-//     }
+export const app = (...lambdas: LambdaExpression[]): Abstraction => {
+    lambdas.reduce((a, b) => {
+        return application(a, b);
+    });
+};
 
-//     console.log("max steps reached in beta reduce");
-// };
+export function var_(names: string, numberingAllowed?: boolean): Variable;
+export function var_(names: string[], numberingAllowed?: boolean): Variable[];
+export function var_(
+    names: string | string[],
+    numberingAllowed = false
+): Variable | Variable[] {
+    if (typeof names === "string") {
+        return Var(names, numberingAllowed);
+    }
+    if (names.length === 0) {
+        throw new Error("Empty array passed to variable constructor.");
+    } else {
+        const variables: Variable[] = names.map((name) =>
+            Var(name, numberingAllowed)
+        );
+        return [...new Set(variables)];
+    }
+}
 
-//Turning each expression into strings without using bound variable names (only numbers) then comparing.
-// export const alphaEq = (expr1: LambdaExpression, expr2: LambdaExpression) => {
-//     return lambdaToString(expr1, false) === lambdaToString(expr2, fa);
-// };
+export function abs(
+    variables: Variable | Variable[] | string | string[],
+    expression: LambdaExpr,
+    visualOrder = true
+) {
+    let vars: Variable[];
+    if (typeof variables === "string") {
+        vars = [Var(variables)];
+    } else if (Array.isArray(variables) && variables.length === 0) {
+        //Abstracting in no variables is just leaving the expression unchanged
+        return expression;
+    } else if (Array.isArray(variables) && typeof variables[0] === "string") {
+        vars = v(variables as string[]);
+    } else if (Array.isArray(variables)) {
+        vars = variables as Variable[];
+    } else {
+        vars = [variables];
+    }
 
-//For episode 03
-//source: https://sookocheff.com/post/fp/evaluating-lambda-expressions/
+    // Visual order means that the array elements have the same order as the visual output after abstraction
 
-// export const boundVarSubstitution = (
-//     abs: AbsExpr,
-//     argument: LambdaExpr
-// ): LambdaExpr => {
-//     const { lambda } = abs;
-//     const { binderNumber, body } = lambda;
+    // e.g.,
+    // λ(x).[(λ(y).[(w)(y)])(x)]
+    // visual order => ["x", "y"]
+    // construction order => ["y", "x"]
 
-//     // Naively without any re-numbering
-//     const inner = (current: LambdaExpr): LambdaExpr => {
-//         if (typeof current === "string") {
-//             return current;
-//         } else if (typeof current === "number") {
-//             return current === binderNumber ? argument : current;
-//         } else if ("func" in current) {
-//             return {
-//                 func: inner(current.func),
-//                 argument: inner(current.argument),
-//             };
-//         } else if ("binderNumber" in current) {
-//             return {
-//                 ...current,
-//                 body: inner(current.body),
-//             };
-//         }
-//         let x: never = current;
-//         return x;
-//     };
-//     return inner(body);
-// };
+    // Visual order is the reverse of the order of construction of iterated abstraction
+    visualOrder && vars.reverse();
 
-//Iterative evaluation by substitution
-//Normal Order, evaluates functions from left to right and from outer most to inner most.
-//Think of it as evaluating functions first, before evaluating the arguments to a function
+    let result = expression;
+    vars.forEach((x) => {
+        result = abstraction(x, result);
+    });
 
-//Note: My numbering system is different from de Bruijn numbering. That uses the distance from the binding lambda to the bound variables so that different instances of the same  bound variables in an expression are represented with different numbes. A way to think of this is that each bound variable token is like a map telling you how to find it's binder from where it is in the expression. The binder itself does not have any number associated with it.
+    return result;
+}
+
+export const lam = {
+    Var: var_,
+    abs,
+    app,
+    alphaEq,
+    betaReduce,
+    isVar,
+    isAbs,
+    isApp,
+    lambdaToString,
+};
