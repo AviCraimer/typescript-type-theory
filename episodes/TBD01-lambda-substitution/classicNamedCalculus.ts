@@ -1,9 +1,11 @@
 //New as of May 17 2023
 
+import { VariableLikeDeclaration } from "typescript";
+
 export type LambdaExpr = Abstraction | Variable | Application;
 
 export type LambdaChild<L extends LambdaExpr = LambdaExpr> = {
-    childFreeVars: Variable[]; //Used to check if a variable is fresh for a replacement
+    // childFreeVars: Variable[]; //Used to check if a variable is fresh for a replacement
     childExpr: L;
 };
 
@@ -93,21 +95,28 @@ export const excludeVariables = (
     return varList.filter((v) => !toRemoveNames.has(v.name));
 };
 
-const getChildFreeVars = (child: LambdaExpr) => {
-    if (isVar(child)) {
-        return [child];
-    } else if (isAbs(child)) {
-        const { boundVar } = child;
+const getFreeVars = (lambda: LambdaExpr): Variable[] => {
+    if (isVar(lambda)) {
+        return [lambda];
+    } else if (isAbs(lambda)) {
+        const { boundVar } = lambda;
 
         //All variables free in the body of the abstraction are free in the abstraction except the bound variable
-        return excludeVariables(child.children[0].childFreeVars, [boundVar]);
-    } else if (isApp(child)) {
-        const funcVars = child.children[0].childFreeVars;
-        const argVars = child.children[1].childFreeVars;
-        return deduplicateVariables([...funcVars, ...argVars]);
+        const body = lambda.children[0].childExpr;
+
+        return excludeVariables(getFreeVars(body), [boundVar]);
+    } else if (isApp(lambda)) {
+        const [func, arg] = appBranches(lambda);
+        const funcVars = lambda.children[0].childExpr;
+        const argVars = lambda.children[1].childExpr;
+
+        return deduplicateVariables([
+            ...getFreeVars(func),
+            ...getFreeVars(arg),
+        ]);
     }
-    let x: never = child;
-    return child;
+    let x: never = lambda;
+    return lambda;
 };
 
 export const getBoundVars = (child: LambdaExpr): Variable[] => {
@@ -142,7 +151,6 @@ export const abstraction = (
         children: [
             {
                 childExpr: lambda,
-                childFreeVars: getChildFreeVars(lambda),
             },
         ],
     };
@@ -157,11 +165,9 @@ export const application = (
         children: [
             {
                 childExpr: first,
-                childFreeVars: getChildFreeVars(first),
             },
             {
                 childExpr: second,
-                childFreeVars: getChildFreeVars(second),
             },
         ],
     };
@@ -230,14 +236,19 @@ export const printExpr = (lambdaExp: LambdaExpr) => {
     console.log(lambdaToString(lambdaExp));
 };
 
-export const childFVToString = (childExpr: LambdaChild) => {
-    return childExpr.childFreeVars.map((v) => lambdaToString(v)).join(", ");
+export const childFVToString = (childExpr: LambdaExpr) => {
+    return getFreeVars(childExpr)
+        .map((v) => lambdaToString(v))
+        .join(", ");
 };
 
 export const childFVsToString = (lambda: LambdaExpr) => {
     return lambda.children
         .map(
-            (c, i) => (i > 0 ? "\n" : "") + `child ${i}: ` + childFVToString(c)
+            (c, i) =>
+                (i > 0 ? "\n" : "") +
+                `child ${i}: ` +
+                childFVToString(c.childExpr)
         )
         .join("");
 };
@@ -320,7 +331,7 @@ export const substitutionMethods: LambdaMethods<
         const { boundVar } = abs;
 
         let replacementChildFreeVars = replacementExpr.children
-            .map((c) => c.childFreeVars)
+            .map((c) => getFreeVars(c.childExpr))
             .reduce((a, b) => [...a, ...b], []);
 
         const body = abs.children[0].childExpr;

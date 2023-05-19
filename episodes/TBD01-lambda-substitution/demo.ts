@@ -35,9 +35,9 @@ console.log(excludeVariables([x, y, z], [x, z]));
 const xy = application(x, y);
 const absX = abstraction(x, xy);
 
-printExpr(x);
-printExpr(xy);
-printExpr(absX);
+// printExpr(x);
+// printExpr(xy);
+// printExpr(absX);
 
 const xz = application(x, z);
 const xw = application(x, w);
@@ -45,14 +45,14 @@ const xyxz = application(xy, xz);
 const xyxzAbs = abstraction(x, xyxz);
 const xyxzAbsAbs = abstraction(x, xyxzAbs);
 
-printExpr(absX);
-printExpr(substitute(absX.children[0].childExpr, w, x));
-printExpr(xyxzAbs);
-console.log(getBoundVars(xyxzAbsAbs));
-printExpr(xyxzAbsAbs);
+// printExpr(absX);
+// printExpr(substitute(absX.children[0].childExpr, w, x));
+// printExpr(xyxzAbs);
+// console.log(getBoundVars(xyxzAbsAbs));
 
-// // const sub1 = substitute(xyxzAbsAbs, xyxz, y);
-// // printExpr(sub1);
+printExpr(xyxzAbsAbs);
+const sub1 = substitute(xyxzAbsAbs, xyxz, y);
+printExpr(sub1);
 // const A1 = abstraction(z, application(abstraction(x, xz), Var("f")));
 // const A2 = abstraction(x, abstraction(z, xz));
 // const B1 = abstraction(z, xz);

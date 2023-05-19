@@ -45,37 +45,24 @@
     varsToRemove.forEach((v) => toRemoveNames.add(v.name));
     return varList.filter((v) => !toRemoveNames.has(v.name));
   };
-  var getChildFreeVars = (child) => {
-    if (isVar(child)) {
-      return [child];
-    } else if (isAbs(child)) {
-      const { boundVar } = child;
-      return excludeVariables(child.children[0].childFreeVars, [boundVar]);
-    } else if (isApp(child)) {
-      const funcVars = child.children[0].childFreeVars;
-      const argVars = child.children[1].childFreeVars;
-      return deduplicateVariables([...funcVars, ...argVars]);
-    }
-    let x2 = child;
-    return child;
-  };
-  var getBoundVars = (child) => {
-    if (isVar(child)) {
-      return [];
-    } else if (isAbs(child)) {
-      const { boundVar } = child;
+  var getFreeVars = (lambda) => {
+    if (isVar(lambda)) {
+      return [lambda];
+    } else if (isAbs(lambda)) {
+      const { boundVar } = lambda;
+      const body = lambda.children[0].childExpr;
+      return excludeVariables(getFreeVars(body), [boundVar]);
+    } else if (isApp(lambda)) {
+      const [func, arg] = appBranches(lambda);
+      const funcVars = lambda.children[0].childExpr;
+      const argVars = lambda.children[1].childExpr;
       return deduplicateVariables([
-        boundVar,
-        ...getBoundVars(child.children[0].childExpr)
+        ...getFreeVars(func),
+        ...getFreeVars(arg)
       ]);
-    } else if (isApp(child)) {
-      const [func, arg] = appBranches(child);
-      const funcVars = getBoundVars(func);
-      const argVars = getBoundVars(arg);
-      return deduplicateVariables([...funcVars, ...argVars]);
     }
-    let x2 = child;
-    return child;
+    let x2 = lambda;
+    return lambda;
   };
   var abstraction = (variable, lambda) => {
     return {
@@ -83,8 +70,7 @@
       boundVar: variable,
       children: [
         {
-          childExpr: lambda,
-          childFreeVars: getChildFreeVars(lambda)
+          childExpr: lambda
         }
       ]
     };
@@ -94,12 +80,10 @@
       syntax: "application",
       children: [
         {
-          childExpr: first,
-          childFreeVars: getChildFreeVars(first)
+          childExpr: first
         },
         {
-          childExpr: second,
-          childFreeVars: getChildFreeVars(second)
+          childExpr: second
         }
       ]
     };
@@ -179,7 +163,7 @@
     },
     abstraction: (abs2, inner, replacementExpr, varToReplace) => {
       const { boundVar } = abs2;
-      let replacementChildFreeVars = replacementExpr.children.map((c) => c.childFreeVars).reduce((a, b) => [...a, ...b], []);
+      let replacementChildFreeVars = replacementExpr.children.map((c) => getFreeVars(c.childExpr)).reduce((a, b) => [...a, ...b], []);
       const body = abs2.children[0].childExpr;
       let freshBody = body;
       let freshVar = abs2.boundVar;
@@ -331,19 +315,14 @@
   console.log(excludeVariables([x, y, z], [x, z]));
   var xy = application(x, y);
   var absX = abstraction(x, xy);
-  printExpr(x);
-  printExpr(xy);
-  printExpr(absX);
   var xz = application(x, z);
   var xw = application(x, w);
   var xyxz = application(xy, xz);
   var xyxzAbs = abstraction(x, xyxz);
   var xyxzAbsAbs = abstraction(x, xyxzAbs);
-  printExpr(absX);
-  printExpr(substitute(absX.children[0].childExpr, w, x));
-  printExpr(xyxzAbs);
-  console.log(getBoundVars(xyxzAbsAbs));
   printExpr(xyxzAbsAbs);
+  var sub1 = substitute(xyxzAbsAbs, xyxz, y);
+  printExpr(sub1);
 
   // episodes/TBD01-lambda-substitution/index.ts
   demo();
