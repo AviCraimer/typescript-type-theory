@@ -7,33 +7,33 @@ export type LambdaChild<L extends LambdaExpr = LambdaExpr> = {
     childExpr: L;
 };
 
-export type BaseLambda<M extends {}> = {
+export type BaseLambda<Meta extends {}> = {
     children: LambdaChild[];
-    meta: M; // Pass in metalanguage info which can be used to add types, etc.
-};
+    syntax: string; // Indicates the kind of syntax represented by the object
+} & Meta; // Pass in metalanguage info which can be used to add types, etc.;
 
-export type Variable<
-    M extends { syntax: "variable" } = { syntax: "variable" }
-> = BaseLambda<M> & {
+export type Variable<Meta extends {} = {}> = BaseLambda<{
+    syntax: "variable";
     name: string;
     children: never[];
-};
+}> &
+    Meta;
 
-export type Abstraction<
-    M extends { syntax: "abstraction" } = { syntax: "abstraction" }
-> = BaseLambda<M> & {
+export type Abstraction<Meta extends {} = {}> = BaseLambda<{
+    syntax: "abstraction";
     boundVar: Variable;
     children: [body: LambdaChild];
-};
+}> &
+    Meta;
 
-export type Application<
-    M extends { syntax: "application" } = { syntax: "application" }
-> = BaseLambda<M> & {
+export type Application<Meta extends {} = {}> = BaseLambda<{
+    syntax: "application";
     children: [func: LambdaChild, argument: LambdaChild];
-};
+}> &
+    Meta;
 
 export const isVar = (x: LambdaExpr): x is Variable => {
-    if (x.meta.syntax === "variable") {
+    if (x.syntax === "variable") {
         return true;
     } else {
         return false;
@@ -41,7 +41,7 @@ export const isVar = (x: LambdaExpr): x is Variable => {
 };
 
 export const isAbs = (x: LambdaExpr): x is Abstraction => {
-    if (x.meta.syntax === "abstraction") {
+    if (x.syntax === "abstraction") {
         return true;
     } else {
         return false;
@@ -49,7 +49,7 @@ export const isAbs = (x: LambdaExpr): x is Abstraction => {
 };
 
 export const isApp = (x: LambdaExpr): x is Application => {
-    if (x.meta.syntax === "application") {
+    if (x.syntax === "application") {
         return true;
     } else {
         return false;
@@ -72,7 +72,7 @@ export const Var = (name: string, numberingAllowed = false): Variable => {
     }
 
     return {
-        meta: { syntax: "variable" },
+        syntax: "variable",
         name,
         children: [],
     };
@@ -137,7 +137,7 @@ export const abstraction = (
     lambda: LambdaExpr
 ): Abstraction => {
     return {
-        meta: { syntax: "abstraction" },
+        syntax: "abstraction",
         boundVar: variable,
         children: [
             {
@@ -153,7 +153,7 @@ export const application = (
     second: LambdaExpr
 ): Application => {
     return {
-        meta: { syntax: "application" },
+        syntax: "application",
         children: [
             {
                 childExpr: first,
@@ -454,10 +454,10 @@ export const betaReduce = (lambda: LambdaExpr, maxSteps = 20) => {
 // Simpilifies the structure of many functions, allows mapping directly over children expressions
 // Make a nicer interface for building expressions
 
-export const app = (...lambdas: LambdaExpression[]): Abstraction => {
-    lambdas.reduce((a, b) => {
+export const app = (...lambdas: LambdaExpr[]): Application => {
+    return lambdas.reduce((a, b) => {
         return application(a, b);
-    });
+    }) as Application;
 };
 
 export function var_(names: string, numberingAllowed?: boolean): Variable;
@@ -491,7 +491,7 @@ export function abs(
         //Abstracting in no variables is just leaving the expression unchanged
         return expression;
     } else if (Array.isArray(variables) && typeof variables[0] === "string") {
-        vars = v(variables as string[]);
+        vars = var_(variables as string[]);
     } else if (Array.isArray(variables)) {
         vars = variables as Variable[];
     } else {

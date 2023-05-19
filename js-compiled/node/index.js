@@ -25,22 +25,22 @@ __export(TBD01_lambda_substitution_exports, {
 module.exports = __toCommonJS(TBD01_lambda_substitution_exports);
 
 // episodes/TBD01-lambda-substitution/classicNamedCalculus.ts
-var isVar = (x) => {
-  if (x.meta.syntax === "variable") {
+var isVar = (x2) => {
+  if (x2.syntax === "variable") {
     return true;
   } else {
     return false;
   }
 };
-var isAbs = (x) => {
-  if (x.meta.syntax === "abstraction") {
+var isAbs = (x2) => {
+  if (x2.syntax === "abstraction") {
     return true;
   } else {
     return false;
   }
 };
-var isApp = (x) => {
-  if (x.meta.syntax === "application") {
+var isApp = (x2) => {
+  if (x2.syntax === "application") {
     return true;
   } else {
     return false;
@@ -54,20 +54,20 @@ var Var = (name, numberingAllowed = false) => {
     );
   }
   return {
-    meta: { syntax: "variable" },
+    syntax: "variable",
     name,
     children: []
   };
 };
 var deduplicateVariables = (vars) => {
   const obj = {};
-  vars.forEach((v2) => obj[v2.name] = v2);
+  vars.forEach((v) => obj[v.name] = v);
   return Object.values(obj);
 };
 var excludeVariables = (varList, varsToRemove) => {
   const toRemoveNames = /* @__PURE__ */ new Set();
-  varsToRemove.forEach((v2) => toRemoveNames.add(v2.name));
-  return varList.filter((v2) => !toRemoveNames.has(v2.name));
+  varsToRemove.forEach((v) => toRemoveNames.add(v.name));
+  return varList.filter((v) => !toRemoveNames.has(v.name));
 };
 var getChildFreeVars = (child) => {
   if (isVar(child)) {
@@ -80,12 +80,30 @@ var getChildFreeVars = (child) => {
     const argVars = child.children[1].childFreeVars;
     return deduplicateVariables([...funcVars, ...argVars]);
   }
-  let x = child;
+  let x2 = child;
+  return child;
+};
+var getBoundVars = (child) => {
+  if (isVar(child)) {
+    return [];
+  } else if (isAbs(child)) {
+    const { boundVar } = child;
+    return deduplicateVariables([
+      boundVar,
+      ...getBoundVars(child.children[0].childExpr)
+    ]);
+  } else if (isApp(child)) {
+    const [func, arg] = appBranches(child);
+    const funcVars = getBoundVars(func);
+    const argVars = getBoundVars(arg);
+    return deduplicateVariables([...funcVars, ...argVars]);
+  }
+  let x2 = child;
   return child;
 };
 var abstraction = (variable, lambda) => {
   return {
-    meta: { syntax: "abstraction" },
+    syntax: "abstraction",
     boundVar: variable,
     children: [
       {
@@ -97,7 +115,7 @@ var abstraction = (variable, lambda) => {
 };
 var application = (first, second) => {
   return {
-    meta: { syntax: "application" },
+    syntax: "application",
     children: [
       {
         childExpr: first,
@@ -120,7 +138,7 @@ var mkLambdaFn = (fns) => (lambda, ...args) => {
     } else if (isAbs(lambda2)) {
       return fns.abstraction(lambda2, inner, ...extraArgs);
     }
-    let x = lambda2;
+    let x2 = lambda2;
     return lambda2;
   };
   return inner(lambda);
@@ -147,25 +165,25 @@ var printExpr = (lambdaExp) => {
 var appBranches = (app2) => {
   return [app2.children[0].childExpr, app2.children[1].childExpr];
 };
-var varEq = (x, y) => {
-  return x.name === y.name;
+var varEq = (x2, y2) => {
+  return x2.name === y2.name;
 };
-var varIn = (x, vars) => {
-  const varNames = new Set(vars.map((v2) => v2.name));
-  return varNames.has(x.name);
+var varIn = (x2, vars) => {
+  const varNames = new Set(vars.map((v) => v.name));
+  return varNames.has(x2.name);
 };
 var filterVarsByName = (vars, name) => {
   name = name.replace(regexEndsWithVarNumber, "");
   let toKeep = /* @__PURE__ */ new Set();
   vars.forEach(
-    (x) => (x.name === name || x.name.startsWith(name) && regexEndsWithVarNumber.test(x.name)) && toKeep.add(x.name === name ? Var(`${name}_0`, true) : x)
+    (x2) => (x2.name === name || x2.name.startsWith(name) && regexEndsWithVarNumber.test(x2.name)) && toKeep.add(x2.name === name ? Var(`${name}_0`, true) : x2)
   );
   return [...toKeep];
 };
 var getFreshVar = (vars, name) => {
   name = name.replace(regexEndsWithVarNumber, "");
   const current = filterVarsByName(vars, name);
-  const currentNumbers = current.map((x) => Number(x.name.slice(x.name.lastIndexOf("_") + 1))).sort();
+  const currentNumbers = current.map((x2) => Number(x2.name.slice(x2.name.lastIndexOf("_") + 1))).sort();
   let firstGap;
   let prevNum = 0;
   for (let index = 0; index < currentNumbers.length; index++) {
@@ -260,8 +278,8 @@ var betaReduce = (lambda, maxSteps = 20) => {
     } else if (isVar(lambda2)) {
       return lambda2;
     }
-    let x = lambda2;
-    return x;
+    let x2 = lambda2;
+    return x2;
   };
   let current = lambda;
   while (tracker.count === 0 || tracker.hasBeenReduced === true && tracker.count < maxSteps) {
@@ -275,7 +293,7 @@ var betaReduce = (lambda, maxSteps = 20) => {
   return current;
 };
 var app = (...lambdas) => {
-  lambdas.reduce((a, b) => {
+  return lambdas.reduce((a, b) => {
     return application(a, b);
   });
 };
@@ -299,7 +317,7 @@ function abs(variables, expression, visualOrder = true) {
   } else if (Array.isArray(variables) && variables.length === 0) {
     return expression;
   } else if (Array.isArray(variables) && typeof variables[0] === "string") {
-    vars = v(variables);
+    vars = var_(variables);
   } else if (Array.isArray(variables)) {
     vars = variables;
   } else {
@@ -307,8 +325,8 @@ function abs(variables, expression, visualOrder = true) {
   }
   visualOrder && vars.reverse();
   let result = expression;
-  vars.forEach((x) => {
-    result = abstraction(x, result);
+  vars.forEach((x2) => {
+    result = abstraction(x2, result);
   });
   return result;
 }
@@ -323,6 +341,36 @@ var lam = {
   isApp,
   lambdaToString
 };
+
+// episodes/TBD01-lambda-substitution/demo.ts
+function demo() {
+}
+console.log("\n".repeat(6));
+var x = Var("x");
+var x1 = Var("x_1", true);
+var x134 = Var("x__134", true);
+var y = Var("y");
+var z = Var("z");
+var w = Var("w");
+console.log(excludeVariables([x, y, z], [x, z]));
+var xy = application(x, y);
+var absX = abstraction(x, xy);
+printExpr(x);
+printExpr(xy);
+printExpr(absX);
+var xz = application(x, z);
+var xw = application(x, w);
+var xyxz = application(xy, xz);
+var xyxzAbs = abstraction(x, xyxz);
+var xyxzAbsAbs = abstraction(x, xyxzAbs);
+printExpr(absX);
+printExpr(substitute(absX.children[0].childExpr, w, x));
+printExpr(xyxzAbs);
+console.log(getBoundVars(xyxzAbsAbs));
+printExpr(xyxzAbsAbs);
+
+// episodes/TBD01-lambda-substitution/index.ts
+demo();
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   lam
