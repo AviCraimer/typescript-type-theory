@@ -8,14 +8,10 @@ import {
     substitute,
     alphaEq,
     getBoundVars,
-    printChildFV,
     filterVarsByName,
     excludeVariables,
     lambdaToString,
     getFreshVar,
-    betaReduce,
-    subForBound,
-    boundVariableString,
     betaStep,
     betaReduce,
 } from "./classicNamedCalculus";
@@ -46,7 +42,7 @@ const xyxzAbs = abstraction(x, xyxz);
 const xyxzAbsAbs = abstraction(x, xyxzAbs);
 
 // printExpr(absX);
-// printExpr(substitute(absX.children[0].childExpr, w, x));
+printExpr(substitute(absX.body, w, x));
 // printExpr(xyxzAbs);
 // console.log(getBoundVars(xyxzAbsAbs));
 

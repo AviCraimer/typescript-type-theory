@@ -1,36 +1,35 @@
 //New as of May 17 2023
 
-import { VariableLikeDeclaration } from "typescript";
-
+/// Circular reference bug. I don't understand why it worked before and not now? Was it just the extra level of indirection in the type definitions?
 export type LambdaExpr = Abstraction | Variable | Application;
 
-export type LambdaChild<L extends LambdaExpr = LambdaExpr> = {
-    // childFreeVars: Variable[]; //Used to check if a variable is fresh for a replacement
-    childExpr: L;
-};
+// export type LambdaChildren<L extends LambdaExpr[] = LambdaExpr[]> = L
+export type LambdaChild<L extends LambdaExpr = LambdaExpr> = L;
 
 export type BaseLambda<Meta extends {}> = {
-    children: LambdaChild[];
     syntax: string; // Indicates the kind of syntax represented by the object
 } & Meta; // Pass in metalanguage info which can be used to add types, etc.;
 
 export type Variable<Meta extends {} = {}> = BaseLambda<{
     syntax: "variable";
     name: string;
-    children: never[];
+    // children: never[] & LambdaChild[];
 }> &
     Meta;
 
 export type Abstraction<Meta extends {} = {}> = BaseLambda<{
     syntax: "abstraction";
     boundVar: Variable;
-    children: [body: LambdaChild];
+    body: LambdaChild;
+    // children: [LambdaChild];
 }> &
     Meta;
 
 export type Application<Meta extends {} = {}> = BaseLambda<{
     syntax: "application";
-    children: [func: LambdaChild, argument: LambdaChild];
+    func: LambdaChild;
+    arg: LambdaChild;
+    // children: [LambdaChild, LambdaChild];
 }> &
     Meta;
 
@@ -76,7 +75,7 @@ export const Var = (name: string, numberingAllowed = false): Variable => {
     return {
         syntax: "variable",
         name,
-        children: [],
+        // children: [],
     };
 };
 
@@ -101,14 +100,12 @@ const getFreeVars = (lambda: LambdaExpr): Variable[] => {
     } else if (isAbs(lambda)) {
         const { boundVar } = lambda;
 
-        //All variables free in the body of the abstraction are free in the abstraction except the bound variable
-        const body = lambda.children[0].childExpr;
+        //All free in the body of the abstraction are free in the abstraction except the bound variable
+        const body = lambda.body;
 
         return excludeVariables(getFreeVars(body), [boundVar]);
     } else if (isApp(lambda)) {
         const [func, arg] = appBranches(lambda);
-        const funcVars = lambda.children[0].childExpr;
-        const argVars = lambda.children[1].childExpr;
 
         return deduplicateVariables([
             ...getFreeVars(func),
@@ -125,10 +122,7 @@ export const getBoundVars = (child: LambdaExpr): Variable[] => {
     } else if (isAbs(child)) {
         const { boundVar } = child;
 
-        return deduplicateVariables([
-            boundVar,
-            ...getBoundVars(child.children[0].childExpr),
-        ]);
+        return deduplicateVariables([boundVar, ...getBoundVars(child.body)]);
     } else if (isApp(child)) {
         const [func, arg] = appBranches(child);
 
@@ -148,11 +142,8 @@ export const abstraction = (
     return {
         syntax: "abstraction",
         boundVar: variable,
-        children: [
-            {
-                childExpr: lambda,
-            },
-        ],
+        body: lambda,
+        // children: [lambda],
     };
 };
 
@@ -162,18 +153,13 @@ export const application = (
 ): Application => {
     return {
         syntax: "application",
-        children: [
-            {
-                childExpr: first,
-            },
-            {
-                childExpr: second,
-            },
-        ],
+        func: first,
+        arg: second,
+        // children: [first, second],
     };
 };
 
-type LambdaMethods<Return, Args extends unknown[]> = {
+export type LambdaMethods<Return, Args extends unknown[]> = {
     variable: (
         x: Variable,
         inner: (lambda: LambdaExpr, ...args: Args) => Return,
@@ -217,15 +203,13 @@ export const lambdaToStringMethods: LambdaMethods<string, []> = {
         return variable.name;
     },
     abstraction: (abs, inner) => {
-        const body = abs.children[0].childExpr;
+        const body = abs.body;
         const bodyStr = inner(body);
 
         return `λ(${inner(abs.boundVar)}).[${bodyStr}]`;
     },
     application: (app, inner) => {
-        return `(${inner(app.children[0].childExpr)})(${inner(
-            app.children[1].childExpr
-        )})`;
+        return `(${inner(app.func)})(${inner(app.arg)})`;
     },
 };
 
@@ -242,29 +226,38 @@ export const childFVToString = (childExpr: LambdaExpr) => {
         .join(", ");
 };
 
-export const childFVsToString = (lambda: LambdaExpr) => {
-    return lambda.children
-        .map(
-            (c, i) =>
-                (i > 0 ? "\n" : "") +
-                `child ${i}: ` +
-                childFVToString(c.childExpr)
-        )
-        .join("");
-};
+// export const childFVsToString = mkLambdaFn(
+//     {
+//         variable (x) {
+//             return []
+//         },
+//         abstraction(abs, inner) {
+//             inner(abs.body)
+//         },
+//         application(app, inner) {
+//             const {func, arg} = app
+//             return inner(func) + inner(arg)
+//         }
 
-export const printChildFV = (lambda: LambdaExpr) => {
-    console.log("\n");
-    console.log(childFVsToString(lambda));
-};
+//     }
+
+// .map(
+//     (c, i) => (i > 0 ? "\n" : "") + `child ${i}: ` + childFVToString(c)
+// )
+// .join("");
+// };
+
+// )
+
+// export const printChildFV = (lambda: LambdaExpr) => {
+//     console.log("\n");
+//     console.log(childFVsToString(lambda));
+// };
 
 export const appBranches = <App extends Application>(
     app: App
-): [
-    func: App["children"][0]["childExpr"],
-    arg: App["children"][1]["childExpr"]
-] => {
-    return [app.children[0].childExpr, app.children[1].childExpr];
+): [func: App["func"], arg: App["arg"]] => {
+    return [app.func, app.arg];
 };
 
 //Later I'll make a lambdaEq function that uses alpha equality but for now, we'll stick to variable equality since it is simple
@@ -319,6 +312,18 @@ export const getFreshVar = (vars: Variable[], name: string) => {
     return Var(name + "_" + firstGap, true);
 };
 
+const getChildNodes = mkLambdaFn<LambdaExpr[], never[]>({
+    variable() {
+        return [] as Variable[];
+    },
+    abstraction(abs) {
+        return [abs.body] as Abstraction[];
+    },
+    application(app) {
+        return [app.func, app.arg] as Application[];
+    },
+});
+
 export const substitutionMethods: LambdaMethods<
     LambdaExpr,
     [replacementExpr: LambdaExpr, varToReplace: Variable]
@@ -330,14 +335,17 @@ export const substitutionMethods: LambdaMethods<
         //A.K.A.: The hard part!
         const { boundVar } = abs;
 
-        let replacementChildFreeVars = replacementExpr.children
-            .map((c) => getFreeVars(c.childExpr))
+        let replacementChildFreeVars = [
+            replacementExpr,
+            ...getChildNodes(replacementExpr),
+        ]
+            .map((c) => getFreeVars(c))
             .reduce((a, b) => [...a, ...b], []);
 
-        const body = abs.children[0].childExpr;
+        const body = abs.body;
 
+        //Set up variables
         let freshBody: LambdaExpr = body;
-
         let freshVar: Variable = abs.boundVar;
         if (varEq(boundVar, varToReplace)) {
             //The bound variable of the abstraction shadows the variable to replace so we do no substitution
@@ -377,8 +385,8 @@ export const alphaEq = (
 ): Boolean => {
     if (isAbs(lambda1) && isAbs(lambda2)) {
         const canonicalBoundVar = Var("" + boundVarCount, true);
-        const body1 = lambda1.children[0].childExpr;
-        const body2 = lambda2.children[0].childExpr;
+        const body1 = lambda1.body;
+        const body2 = lambda2.body;
         const newBody1 = substitute(body1, canonicalBoundVar, lambda1.boundVar);
         const newBody2 = substitute(body2, canonicalBoundVar, lambda2.boundVar);
         console.log("1.");
@@ -404,7 +412,7 @@ export const alphaEq = (
 
 //This type defines a beta reducible lambda expression
 type Redex = Application & {
-    children: [LambdaChild<Abstraction>, LambdaChild];
+    func: Abstraction;
 };
 
 const isRedex = (lambda: LambdaExpr): lambda is Redex => {
@@ -418,8 +426,8 @@ const isRedex = (lambda: LambdaExpr): lambda is Redex => {
 };
 
 export const betaStep = (redex: Redex) => {
-    const [func, arg] = appBranches(redex);
-    const body = func.children[0].childExpr;
+    const { func, arg } = redex;
+    const body = func.body;
     return substitute(body, arg, func.boundVar);
 };
 
@@ -428,13 +436,16 @@ export const betaReduce = (lambda: LambdaExpr, maxSteps = 20) => {
 
     const inner = (lambda: LambdaExpr): LambdaExpr => {
         if (isRedex(lambda)) {
+            console.log("redex:        ", lambdaToString(lambda));
             tracker.hasBeenReduced = true;
+            const reduced = betaStep(lambda);
+            console.log("reduced redex:", lambdaToString(reduced));
             return betaStep(lambda);
         } else if (isApp(lambda)) {
             const [func, arg] = appBranches(lambda);
             return application(inner(func), inner(arg));
         } else if (isAbs(lambda)) {
-            const body = lambda.children[0].childExpr;
+            const body = lambda.body;
             return abstraction(lambda.boundVar, inner(body));
         } else if (isVar(lambda)) {
             return lambda;
@@ -537,4 +548,6 @@ export const lam = {
     isAbs,
     isApp,
     lambdaToString,
+    printExpr,
+    mkLambdaFn,
 };

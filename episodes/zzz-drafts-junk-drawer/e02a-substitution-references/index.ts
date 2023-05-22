@@ -9,7 +9,6 @@ import {
     Reducible,
     LambdaTerm,
     recursiveTraversal,
-    getFreeVars
 } from "./lambdaExpressions";
 import "./lambdaExpressions";
 

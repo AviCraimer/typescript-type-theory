@@ -1,5 +1,6 @@
-import demo from "./demo";
-
+// import demo from "./demo";
+// import "./test/lambdaExp.test";
+import "./test/variableCapture.test";
 export { lam } from "./classicNamedCalculus";
 
 export type {
@@ -10,4 +11,4 @@ export type {
     BaseLambda,
 } from "./classicNamedCalculus";
 
-demo();
+// demo();
