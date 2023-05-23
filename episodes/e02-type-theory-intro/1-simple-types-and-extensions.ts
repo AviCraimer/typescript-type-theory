@@ -1,15 +1,18 @@
 // Church style type theory
-type BaseType = number | boolean;
+export type BaseType = number | boolean | string;
 
-type FunctionType<
+export type FunctionType<
     Arg extends BaseType | FunctionType<any, any>,
     Return extends BaseType | FunctionType<any, any>
 > = (arg: Arg) => Return;
 
-type ChurchSimpleType = BaseType | FunctionType<any, any>;
+export type ChurchSimpleType = BaseType | FunctionType<any, any>;
 
 //Examples
-type BinaryOperation = FunctionType<number, FunctionType<number, number>>;
+export type BinaryOperation = FunctionType<
+    number,
+    FunctionType<number, number>
+>;
 
 const add: BinaryOperation = (x) => (y) => x + y;
 
@@ -36,36 +39,42 @@ type CheckAdd3 = IsChurchSimpleSubtype<typeof add3>; // false
 // Terminal (Singleton) Type and Empty Type (Initial Type)
 
 const singletonValue = Symbol("*");
-export type TerminalType = typeof singletonValue;
+export type SingletonType = typeof singletonValue;
 
 export type EmptyType = never;
 
 export type SimpleType =
     | ChurchSimpleType
-    | Coproduct<any, any>
-    | Product<any, any>
-    | TerminalType
-    | EmptyType;
+    | SingletonType
+    | EmptyType
+    | Coproduct<any, any> // any is needed to avoid circular reference
+    | Product<any, any>;
 
 // Product
-export type Product<T1 extends SimpleType, T2 extends SimpleType> = {
+export type Product<
+    T1 extends SimpleType = SimpleType,
+    T2 extends SimpleType = SimpleType
+> = {
     pi1: T1;
     pi2: T2;
 };
 
 export type CoproductInjection = "i1" | "i2";
 
-type I1<T extends SimpleType> = {
+export type I1<T extends SimpleType> = {
     injection: "i1";
     value: T;
 };
 
-type I2<T extends SimpleType> = {
+export type I2<T extends SimpleType> = {
     injection: "i2";
     value: T;
 };
 
-type Coproduct<T1 extends SimpleType, T2 extends SimpleType> = I1<T1> | I2<T2>;
+export type Coproduct<
+    T1 extends SimpleType = SimpleType,
+    T2 extends SimpleType = SimpleType
+> = I1<T1> | I2<T2>;
 
 let stringOrNumber: Coproduct<string, number>;
 

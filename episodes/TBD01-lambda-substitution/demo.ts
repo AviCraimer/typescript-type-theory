@@ -14,6 +14,7 @@ import {
     getFreshVar,
     betaStep,
     betaReduce,
+    abs,
 } from "./classicNamedCalculus";
 
 export default function demo() {}
@@ -26,7 +27,12 @@ const y = Var("y");
 const z = Var("z");
 const w = Var("w");
 
-console.log(excludeVariables([x, y, z], [x, z]));
+// console.log(x);
+// console.log(lambdaToString(x));
+
+console.log(abs(x, x));
+
+// console.log(excludeVariables([x, y, z], [x, z]));
 
 const xy = application(x, y);
 const absX = abstraction(x, xy);
@@ -41,14 +47,16 @@ const xyxz = application(xy, xz);
 const xyxzAbs = abstraction(x, xyxz);
 const xyxzAbsAbs = abstraction(x, xyxzAbs);
 
+// printExpr( abs (x Var("x")) )
+
 // printExpr(absX);
-printExpr(substitute(absX.body, w, x));
+// printExpr(substitute(absX.body, w, x));
 // printExpr(xyxzAbs);
 // console.log(getBoundVars(xyxzAbsAbs));
 
-printExpr(xyxzAbsAbs);
-const sub1 = substitute(xyxzAbsAbs, xyxz, y);
-printExpr(sub1);
+// printExpr(xyxzAbsAbs);
+// const sub1 = substitute(xyxzAbsAbs, xyxz, y);
+// printExpr(sub1);
 // const A1 = abstraction(z, application(abstraction(x, xz), Var("f")));
 // const A2 = abstraction(x, abstraction(z, xz));
 // const B1 = abstraction(z, xz);
