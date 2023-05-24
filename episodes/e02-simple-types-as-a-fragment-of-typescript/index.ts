@@ -1,19 +1,62 @@
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+// TypeScript Type Theory
+//
+// Episode 2
+//
+// SIMPLE TYPES AS A FRAGMENT OF TYPESCRIPT TYPES
+//
+// Created by Avi Craimer
+//
+//
+export type _SimpleType_ =
+    | BaseType<boolean | string | number>
+    | FunctionType<[any, any]>;
+//
+//
+//
+//
+//
+//
+//
+//
 // Church style type theory
-export type BaseType = number | boolean | string;
+export type RawBaseTypes = number | boolean | string;
 
-export type FunctionType<
-    Arg extends BaseType | FunctionType<any, any>,
-    Return extends BaseType | FunctionType<any, any>
-> = (arg: Arg) => Return;
+// It will be convenient if all our simple types are expressed as types with a single generic type argument
+export type BaseType<DataType extends RawBaseTypes> = DataType;
 
-export type ChurchSimpleType = BaseType | FunctionType<any, any>;
+// Note we use any in this definition to avoid circular reference error from TS.
+export type ChurchSimpleType =
+    | BaseType<RawBaseTypes>
+    | FunctionType<[any, any]>;
+
+type TypePair = [
+    BaseType<any> | FunctionType<[any, any]>,
+    BaseType<any> | FunctionType<[any, any]>
+];
+
+export type FunctionType<DomainCodomain extends TypePair> =
+    DomainCodomain extends [infer Domain, infer Codomain]
+        ? (arg: Domain) => Codomain
+        : never;
+
+// One of the first computer science oriented versions of type theory was created by Alonzo Church, the mathematician who invented lambda calculus as a model of computation.
 
 //Examples
 export type BinaryOperation = FunctionType<
-    number,
-    FunctionType<number, number>
+    [number, FunctionType<[number, number]>]
 >;
 
+// We only have single argument functions, but it isn't a limitation because we can have a function return another function to take both arguments one at a time.
 const add: BinaryOperation = (x) => (y) => x + y;
 
 //We can create a utility type (not part of our official simple type system) which can test if a type is a simple type.
@@ -42,13 +85,6 @@ const singletonValue = Symbol("*");
 export type SingletonType = typeof singletonValue;
 
 export type EmptyType = never;
-
-export type SimpleType =
-    | ChurchSimpleType
-    | SingletonType
-    | EmptyType
-    | Coproduct<any, any> // any is needed to avoid circular reference
-    | Product<any, any>;
 
 // Product
 export type Product<
@@ -94,6 +130,12 @@ stringOrNumber = {
     value: 4334,
 };
 
-export type IsSimpleSubtype<T> = T extends SimpleType ? true : false;
+// Our extended system of simple types is as follows. In a later episode, we'll use these to demonstrate the propositions as types principle for propositional logic.
+export type SimpleType =
+    | ChurchSimpleType
+    | SingletonType
+    | EmptyType
+    | Coproduct<any, any> // any is needed to avoid circular reference
+    | Product<any, any>;
 
-export {};
+export type IsSimpleSubtype<T> = T extends SimpleType ? true : false;

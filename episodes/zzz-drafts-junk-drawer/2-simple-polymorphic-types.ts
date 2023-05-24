@@ -18,6 +18,11 @@ type SimpleTypeConstructorAttempt<
     S extends SimpleType
 > = T<S> extends SimpleType ? T : never;
 
+type SimpleTypeConstructorAttempt2<
+    T,
+    S extends SimpleType
+> = T<S> extends SimpleType ? T : never;
+
 // However, using English as an informal meta-meta-language, we can describe the set of (single argument) polymorphic simple types as follows:
 
 // A generic type that take a generic parameter that extends simple type and which always is a simple type.
