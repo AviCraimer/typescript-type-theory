@@ -2,12 +2,6 @@
 //
 //
 //
-//
-//
-//
-//
-//
-//
 // TypeScript Type Theory
 //
 // Episode 2
@@ -29,15 +23,13 @@ export type _SimpleType_ =
 //
 //
 // Church style type theory
-export type RawBaseTypes = number | boolean | string;
+export type RawBaseType = number | boolean | string;
 
 // It will be convenient if all our simple types are expressed as types with a single generic type argument
-export type BaseType<DataType extends RawBaseTypes> = DataType;
+export type BaseType<DataType extends RawBaseType> = DataType;
 
 // Note we use any in this definition to avoid circular reference error from TS.
-export type ChurchSimpleType =
-    | BaseType<RawBaseTypes>
-    | FunctionType<[any, any]>;
+export type ChurchSimpleType = BaseType<RawBaseType> | FunctionType<[any, any]>;
 
 type TypePair = [
     BaseType<any> | FunctionType<[any, any]>,
@@ -81,10 +73,10 @@ type CheckAdd3 = IsChurchSimpleSubtype<typeof add3>; // false
 
 // Terminal (Singleton) Type and Empty Type (Initial Type)
 
-const singletonValue = Symbol("*");
+export const singletonValue = Symbol("*");
 export type SingletonType = typeof singletonValue;
 
-export type EmptyType = never;
+export type EmptyType = { witness: never };
 
 // Product
 export type Product<
@@ -95,6 +87,7 @@ export type Product<
     pi2: T2;
 };
 
+//Either type / Coproduct
 export type CoproductInjection = "i1" | "i2";
 
 export type I1<T extends SimpleType> = {
@@ -112,22 +105,36 @@ export type Coproduct<
     T2 extends SimpleType = SimpleType
 > = I1<T1> | I2<T2>;
 
-let stringOrNumber: Coproduct<string, number>;
+type union = ("a" | "b") | ("a" | "c");
+// Disjoint Union
+type coproduct = Coproduct<"a" | "b", "a" | "c">;
 
-stringOrNumber = {
+let disjointUnion: Coproduct<"a" | "b", "a" | "c">;
+
+disjointUnion = {
     injection: "i1",
-    value: "hello",
+    value: "a",
 };
 
-//Type error if we try to use a string value with i2
-// stringOrNumber = {
-//     injection: "i2",
-//     value: "hello",
-// };
+disjointUnion = {
+    injection: "i1",
+    value: "b",
+};
 
-stringOrNumber = {
+// Type error if we try to use a string value with i2
+disjointUnion = {
     injection: "i2",
-    value: 4334,
+    value: "a",
+};
+
+disjointUnion = {
+    injection: "i2",
+    value: "b",
+};
+
+disjointUnion = {
+    injection: "i1",
+    value: "c",
 };
 
 // Our extended system of simple types is as follows. In a later episode, we'll use these to demonstrate the propositions as types principle for propositional logic.

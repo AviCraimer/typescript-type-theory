@@ -25,12 +25,15 @@ export type LogicalProposition = AtomicProposition | TruthFunctionalProposition;
 //
 //
 //
-
+//
+//
+//
+//
 // Here we'll build up a propositional logic by defining special types for propositions and logical connectives (a.k.a. truth-functions).
 
 // In a later episode we'll see how propositional logical can equivalently be expressed in terms of type instantiation
 
-type Atom<TVal extends boolean> = {
+export type Atom<TVal extends boolean> = {
     syntax: "Atom";
     symbol: string;
     tVal: TVal;
@@ -40,11 +43,11 @@ type Atom<TVal extends boolean> = {
 };
 
 // At the type level we can ignore the content of the proposition and we only have to consider two classes of propositions, those that are true and those that are false.
-type True = Atom<true>;
-type False = Atom<false>;
+export type True = Atom<true>;
+export type False = Atom<false>;
 
 // At the value level we can use the "symbol" field to write our sentence
-const theSkyIsBlue: True = {
+export const theSkyIsBlue: True = {
     syntax: "Atom",
     symbol: "The sky is blue",
     tVal: true,
@@ -147,7 +150,10 @@ type TruthFunctionSyntax = {
     syntax: "TruthFunction";
 };
 
-type And<P extends Proposition, Q extends Proposition> = TruthFunctionSyntax & {
+export type And<
+    P extends Proposition,
+    Q extends Proposition
+> = TruthFunctionSyntax & {
     symbol: "&";
     components: [P, Q];
 } & ResolveType<{
@@ -168,14 +174,17 @@ const SkyAndPigs: And<typeof theSkyIsBlue, typeof pigsFly> = {
     tVal: false,
 };
 
-type Or<P extends Proposition, Q extends Proposition> = TruthFunctionSyntax & {
+export type Or<
+    P extends Proposition,
+    Q extends Proposition
+> = TruthFunctionSyntax & {
     symbol: "∨";
     components: [P, Q];
 } & ResolveType<{
         tVal: OrTruthFunc<P, Q>;
     }>;
 
-type IfThen<
+export type IfThen<
     P extends Proposition,
     Q extends Proposition
 > = TruthFunctionSyntax & {
@@ -185,14 +194,14 @@ type IfThen<
         tVal: IfThenTruthFunc<P, Q>;
     }>;
 
-type Not<P extends Proposition> = TruthFunctionSyntax & {
+export type Not<P extends Proposition> = TruthFunctionSyntax & {
     symbol: "¬";
     components: [P];
 } & ResolveType<{
         tVal: NotTruthFunc<P>;
     }>;
 
-// Let's make sure that our type definitions for atoms and composite propositions are actually subtypes of our general Proposition type.
+// Let's make sure that our export type definitions for atoms and composite propositions are actually subtypes of our general Proposition type.
 type IsSubtype<A, B> = A extends B ? true : false;
 
 type TestAtomAsProp = IsSubtype<Atom<boolean>, Proposition>;
@@ -204,27 +213,36 @@ type TestIfThenAsProp = IsSubtype<
 >;
 type TestNotAsProp = IsSubtype<Not<Proposition>, Proposition>;
 
-// Example Statements
-type FFandFalse_or_TrueTrue = Or<FFandFalse, TrueTrue>;
+// Example
 
-"&" | "∨" | "⊃" | "¬" | "(" | ")";
+// False ∨ (True & True)
+type FFandFalse_or_TrueTrue = Or<False, TrueTrue>;
 
-// Logical Equivalence
-//  P ⇔ Q  means by definition  (P ⊃ Q) & (Q ⊃ P)
-type Biconditional<P extends Proposition, Q extends Proposition> = And<
-    IfThen<P, Q>,
-    IfThen<Q, P>
->;
+//Logical Truths  (Truth Functional Truths)
+// A proposition is logically true if every assignment of truth-values to it's atoms yields the truth of the whole statement
 
-// DeMorgan's Law Asserts the Logical Truth of an Interesting Logical Equivalence
-//  ¬(P & Q) ⇔ (¬P ∨ ¬Q)
-// In English, It is not the case that "P and Q" means the same logically as neither P nor Q
-type DeMorgan<P extends Proposition, Q extends Proposition> = Biconditional<
-    Not<And<P, Q>>,
-    Or<Not<P>, Not<Q>>
->;
+// Consider  (¬P ∨ P)
+type NotPOrP<P extends Proposition> = Or<Not<P>, P>;
 
-// Proof of logical truth by semantic model
+// We can test this by trying it with P = True and P = False
+type PAssignedTrue = NotPOrP<True>["tVal"];
+
+type PAssignedFalse = NotPOrP<False>["tVal"];
+
+// We have just given a semantic proof of (¬P ∨ P)
+
+// prettier-ignore
+type PImpliesPorQ<P extends Proposition, Q extends Proposition>
+= IfThen<P, Or<P, Q> >; // P ⊃ (P ∨ Q)
+
+type PImpliesPorQ_TT = PImpliesPorQ<True, True>["tVal"];
+type PImpliesPorQ_TF = PImpliesPorQ<True, False>["tVal"];
+type PImpliesPorQ_FT = PImpliesPorQ<False, True>["tVal"];
+type PImpliesPorQ_FF = PImpliesPorQ<False, False>["tVal"];
+
+// We can manually check that they are all true.
+
+// It would be nice not to have to check each result separately.
 
 // To be a logical truth, we need all truth value assignments to come out true
 type AllTrue = [true, true, true, true];
@@ -237,6 +255,32 @@ type SemanticProofInTwoVars<
     TruthValueAssignments extends [boolean, boolean, boolean, boolean]
 > = TypeEq<TruthValueAssignments, AllTrue>;
 
+type ProofOfPImpliesPorQ = SemanticProofInTwoVars<
+    [PImpliesPorQ_TT, PImpliesPorQ_TF, PImpliesPorQ_FT, PImpliesPorQ_FF]
+>;
+
+// Just to show that our satisfaction solver works to exclude things that are not logically true, let's try out the defining truth values for the connective &
+type TestAndForLogicalTruth = SemanticProofInTwoVars<
+    [true, false, false, false]
+>; // false
+
+// More complex logical proofs can be expressed using the biconditional or logical equivalence relation.
+
+// Logical Equivalence
+//  P ⇔ Q  means by definition  (P ⊃ Q) & (Q ⊃ P)
+type Biconditional<P extends Proposition, Q extends Proposition> = And<
+    IfThen<P, Q>,
+    IfThen<Q, P>
+>;
+
+// DeMorgan's Law Asserts the Logical Truth of an interesting logical equivalence
+//  ¬(P & Q) ⇔ (¬P ∨ ¬Q)
+// It is not the case that "P and Q" means the same logically as neither P nor Q
+type DeMorgan<P extends Proposition, Q extends Proposition> = Biconditional<
+    Not<And<P, Q>>,
+    Or<Not<P>, Not<Q>>
+>;
+
 // Unfortunately we have to do this part manually since we TypeScript doesn't let us apply type arguments to generic type parameters (i.e., it lacks higher-kinded types as in Haskell)
 type assignment1 = DeMorgan<True, True>["tVal"];
 type assignment2 = DeMorgan<True, False>["tVal"];
@@ -246,6 +290,3 @@ type assignment4 = DeMorgan<False, False>["tVal"];
 type ProofOfDeMorgansLaw = SemanticProofInTwoVars<
     [assignment1, assignment2, assignment3, assignment4]
 >; // true
-
-// Just to show that our satisfaction solver works to exclude things that are not semantically gaurenteed to be true, I'll put in the defining truth values for the connective and
-type IsAndLogicallyTrue = SemanticProofInTwoVars<[true, false, false, false]>; // false
