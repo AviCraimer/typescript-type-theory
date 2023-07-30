@@ -1,6 +1,6 @@
 import styled from "styled-components";
 import { examples1 } from "../logic/examples/expressions";
-import { Atom } from "./Atom";
+import { Atom } from "./RenderRel/Atom";
 
 const PageContainer = styled.div``;
 

@@ -1,3 +1,4 @@
+import { OpName } from "./syntaxTree";
 export const unaryOps = {
     neg: "¬",
     converse: "⫯",
@@ -208,4 +209,43 @@ export const toStr = (relation: Relation): string => {
 
 export const printRel = (rel: Relation | undefined) => {
     console.log(rel ? toStr(rel) : "undefined");
+};
+
+const sd = Object.entries(allOps);
+
+type Entries<T extends {}> = {
+    [K in keyof T]: [K, T[K]];
+}[keyof T];
+
+type Entries2<T extends {}> = {
+    [K in keyof T]: { [valKey in T[K]]: K };
+};
+
+type ReverseMap<T extends Record<keyof T, keyof any>> = {
+    [P in T[keyof T]]: {
+        [K in keyof T]: T[K] extends P ? K : never;
+    }[keyof T];
+};
+
+export type OpSymToName = ReverseMap<AllOps>;
+export const opSymToName = <Op extends AllOps[OpName]>(op: Op) => {
+    const opName = (Object.keys(allOps) as Array<OpName>).find(
+        (key) => allOps[key] === op
+    );
+
+    if (opName === undefined) {
+        throw new Error();
+    } else {
+        return opName as OpSymToName[Op];
+    }
+};
+
+export const getOpName = <Op extends AllOps[OpName]>(op: Op): OpName => {
+    for (const key in allOps) {
+        const opName = key as OpName;
+        const opSym = allOps[opName];
+        if (opSym === op) {
+            return opName;
+        }
+    }
 };

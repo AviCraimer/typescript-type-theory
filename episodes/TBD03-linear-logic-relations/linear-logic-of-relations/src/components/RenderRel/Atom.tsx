@@ -1,8 +1,15 @@
 import styled from "styled-components";
-import { isAtomic, AtomicRelation, Relation, toStr } from "../logic/syntaxTree";
-import { useTreeStore } from "../stores/tree";
+import {
+    isAtomic,
+    AtomicRelation,
+    Relation,
+    toStr,
+} from "../../logic/syntaxTree";
+import { useTreeStore } from "../../stores/tree";
 
-const AtomContainer = styled.div``;
+const AtomContainer = styled.div`
+    background: #eee;
+`;
 
 type Props = {
     children: AtomicRelation;
