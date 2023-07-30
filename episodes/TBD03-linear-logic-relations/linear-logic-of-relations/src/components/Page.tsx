@@ -1,6 +1,7 @@
 import styled from "styled-components";
 import { examples1 } from "../logic/examples/expressions";
-import { Atom } from "./RenderRel/Atom";
+
+import { RenderRel } from "./RenderRel";
 
 const PageContainer = styled.div``;
 
@@ -9,7 +10,7 @@ type Props = {};
 export const Page = ({}: Props) => {
     return (
         <PageContainer>
-            <Atom>{examples1.R}</Atom>
+            <RenderRel>{examples1.conR}</RenderRel>
         </PageContainer>
     );
 };

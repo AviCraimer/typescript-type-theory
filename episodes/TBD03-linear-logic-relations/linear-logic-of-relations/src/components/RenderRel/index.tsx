@@ -14,7 +14,7 @@ type Props = {
     children: Relation;
 };
 
-const RenderRel = ({ children }: Props) => {
+export const RenderRel = ({ children }: Props) => {
     if (opCheck.atom(children)) {
         const Component = getRelComponent("atom");
 

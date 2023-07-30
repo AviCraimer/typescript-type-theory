@@ -5,9 +5,13 @@ import {
     SpecificComp,
     opCheck,
 } from "../../logic/syntaxTree";
+import { RenderRel } from ".";
+import { Atom } from "./Atom";
 
 const ConverseContainer = styled.div`
     background: #222;
+    border: #6968b8;
+    padding: 8px;
 `;
 
 // Converse of an atomic relation is handled specially
@@ -26,10 +30,14 @@ const AtomConverse = ({ children }: AtomConverseProps) => {
 
     return (
         <ConverseContainer>
-            <p>
-                <Flip>({name})</Flip>
-            </p>
-            <p>{converseName}</p>
+            <Atom.Container>
+                <>
+                    <p>
+                        <Flip>({name})</Flip>
+                    </p>
+                    <p>{converseName}</p>
+                </>
+            </Atom.Container>
         </ConverseContainer>
     );
 };
