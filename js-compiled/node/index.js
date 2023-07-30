@@ -1,6 +1,6 @@
 "use strict";
 
-// episodes/TBD03-linear-logic-relations/syntaxTree.ts
+// episodes/TBD03-linear-logic-relations/linear-logic-of-relations/src/logic/syntaxTree.ts
 var unaryOps = {
   neg: "\xAC",
   converse: "\u2AEF",
@@ -87,7 +87,7 @@ var opApp = {
   linNeg: applyUnary(allOps.linNeg)
 };
 
-// episodes/TBD03-linear-logic-relations/examples/operationChecking.ts
+// episodes/TBD03-linear-logic-relations/linear-logic-of-relations/src/logic/examples/operationChecking.ts
 var R = atom("R", "R\u030C");
 var S = atom("S", "S\u030C");
 var T = atom("T", "T\u030C");

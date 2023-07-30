@@ -26,3 +26,13 @@ printRel(cRParS);
 
 const complex1 = opApp.linImp(opApp.and(cRParS, T), RS);
 printRel(complex1);
+
+export const examples1 = {
+    R,
+    conR,
+    conConR,
+    RS,
+    conRS,
+    cRParS,
+    complex1,
+};
