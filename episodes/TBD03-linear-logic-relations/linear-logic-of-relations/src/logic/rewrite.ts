@@ -8,13 +8,16 @@ import {
     allOps,
     SpecificComp,
     SpecificComp2,
-    opCheckBranch,
-    opCheckLevel2,
-    unionChecks,
-    intersectChecks,
 } from "./syntaxTree";
 import { Diversity, Id, Bottom, Top } from "./constantRelations";
 import { isEqual } from "lodash";
+import {
+    unionChecks,
+    opCheckLevel2,
+    opCheckBranch,
+} from "./structurePredicates";
+
+//Idea I want to be able to express these rules in terms of expressions. I should have a new 0-ary operator which is to construct Relation variables. Pairs of expressions which use these variables are used to express re-write rules.
 
 // An equivalence requires a predicate to test if the tree has the correct shape and a function to transform a tree of that shape to another shape.
 

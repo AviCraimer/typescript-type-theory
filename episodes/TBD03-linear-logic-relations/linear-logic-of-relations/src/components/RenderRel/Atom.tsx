@@ -10,6 +10,9 @@ const AtomContainer = styled.div`
     background: ${CSSVarNames.pos};
     padding: 4px;
     width: fit-content;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     p {
         margin: 6px;
         line-height: 1;

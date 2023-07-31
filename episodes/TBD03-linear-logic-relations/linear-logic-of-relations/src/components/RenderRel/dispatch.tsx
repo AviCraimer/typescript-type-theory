@@ -1,17 +1,24 @@
 import {
     AllOps,
     SpecificComp,
-    allOps,
     OpName,
     AtomicRelation,
-    CompositeRelation,
     opSymToName,
 } from "../../logic/syntaxTree";
 import { Atom } from "./Atom";
+import { Composition } from "./Composition";
+import { Conjunction } from "./Conjunction";
 import { Converse } from "./Converse";
 import { Negation } from "./Negation";
 
-const supportedOpTypesArr = ["atom", "converse", "neg", "linNeg"] as const;
+const supportedOpTypesArr = [
+    "atom",
+    "converse",
+    "neg",
+    "linNeg",
+    "and",
+    "comp",
+] as const;
 
 export type SupportedOpType = (typeof supportedOpTypesArr)[number];
 
@@ -37,6 +44,8 @@ const RelComponents: RelComponentDictionary = {
     converse: Converse,
     neg: Negation,
     linNeg: Negation,
+    and: Conjunction,
+    comp: Composition,
 };
 
 export const getRelComponent = <Type extends SupportedOpType>(type: Type) => {

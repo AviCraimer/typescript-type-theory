@@ -1,10 +1,4 @@
-import {
-    opApp,
-    atom,
-    printRel,
-    opCheckLevel2,
-    opCheckLevel3,
-} from "../syntaxTree";
+import { opApp, atom, printRel } from "../syntaxTree";
 
 export const R = atom("R", "Ř");
 export const S = atom("S", "Š");
@@ -29,6 +23,7 @@ printRel(complex1);
 
 export const examples1 = {
     R,
+    S,
     conR,
     conConR,
     RS,

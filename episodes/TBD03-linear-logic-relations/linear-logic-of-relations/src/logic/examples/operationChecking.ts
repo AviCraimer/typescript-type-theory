@@ -1,4 +1,5 @@
-import { opApp, atom, opCheckLevel2, opCheckLevel3 } from "../syntaxTree";
+import { opCheckLevel2, opCheckLevel3 } from "../structurePredicates";
+import { opApp, atom } from "../syntaxTree";
 
 const R = atom("R", "Ř");
 const S = atom("S", "Š");
