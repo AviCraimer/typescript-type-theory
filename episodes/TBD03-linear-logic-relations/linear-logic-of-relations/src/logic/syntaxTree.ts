@@ -1,4 +1,3 @@
-import { OpName } from "./syntaxTree";
 export const unaryOps = {
     neg: "¬",
     converse: "⫯",
@@ -248,4 +247,5 @@ export const getOpName = <Op extends AllOps[OpName]>(op: Op): OpName => {
             return opName;
         }
     }
+    throw new Error();
 };

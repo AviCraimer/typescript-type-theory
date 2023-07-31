@@ -83,6 +83,7 @@ export const opCheckLevel3 =
         return (
             opCheck[outer](rel) &&
             opCheck[inner1](rel.children[0]) &&
+            //@ts-ignore
             opCheck[inner2](rel.children[0].children[0]) // TODO Check this
         );
     };
