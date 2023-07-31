@@ -1,4 +1,4 @@
-import styled from "styled-components";
+import styled from "styled-components/macro";
 import {
     AllOps,
     AtomicRelation,
@@ -7,11 +7,13 @@ import {
 } from "../../logic/syntaxTree";
 import { RenderRel } from ".";
 import { Atom } from "./Atom";
+import { CSSVarNames } from "../../style/CSSVariables";
 
 const ConverseContainer = styled.div`
-    background: #222;
+    background: ${CSSVarNames.neg};
     border: #6968b8;
     padding: 8px;
+    width: fit-content;
 `;
 
 // Converse of an atomic relation is handled specially

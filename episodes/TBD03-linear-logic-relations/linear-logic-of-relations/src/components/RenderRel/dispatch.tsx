@@ -9,8 +9,9 @@ import {
 } from "../../logic/syntaxTree";
 import { Atom } from "./Atom";
 import { Converse } from "./Converse";
+import { Negation } from "./Negation";
 
-const supportedOpTypesArr = ["atom", "converse"] as const;
+const supportedOpTypesArr = ["atom", "converse", "neg", "linNeg"] as const;
 
 export type SupportedOpType = (typeof supportedOpTypesArr)[number];
 
@@ -32,8 +33,10 @@ type RelComponentDictionary = Partial<{
 }>;
 
 const RelComponents: RelComponentDictionary = {
-    converse: Converse,
     atom: Atom,
+    converse: Converse,
+    neg: Negation,
+    linNeg: Negation,
 };
 
 export const getRelComponent = <Type extends SupportedOpType>(type: Type) => {

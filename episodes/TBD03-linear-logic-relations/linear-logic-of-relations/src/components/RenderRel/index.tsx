@@ -1,3 +1,4 @@
+import styled from "styled-components/macro";
 import {
     Relation,
     SpecificComp,
@@ -11,23 +12,37 @@ import {
 } from "./dispatch";
 
 type Props = {
+    root?: boolean;
     children: Relation;
 };
 
-export const RenderRel = ({ children }: Props) => {
-    if (opCheck.atom(children)) {
-        const Component = getRelComponent("atom");
+const RelationContainer = styled.div`
+    box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
+    width: fit-content;
+    --positive-background-color: #fff;
+    --negative-background-color: #222;
+    padding: 24px;
+    background: #ddd;
+`;
 
-        return <Component>{children}</Component>;
-    }
-
-    const type = getSupportedOpType(children.operation);
+export const RenderRel = ({ children, root = false }: Props) => {
+    const type = opCheck.atom(children)
+        ? "atom"
+        : getSupportedOpType(children.operation);
 
     if (type) {
-        const Component = getRelComponent(type);
+        // Below: We know that children has the correct type for the component because we looked up the component from the children, but TS can't infer this, so we use any here.
+        const Component = getRelComponent(type) as (props: {
+            children: Relation;
+        }) => JSX.Element;
 
-        // We know that children has the correct type for the component because we looked up the component from the children, but TS can't infer this, so we use any here.
-        return <Component>{children as any}</Component>;
+        return root ? (
+            <RelationContainer>
+                <Component>{children}</Component>
+            </RelationContainer>
+        ) : (
+            <Component>{children}</Component>
+        );
     } else {
         console.log("\nBad render below:");
         console.error(children);
