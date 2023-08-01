@@ -1,4 +1,4 @@
-import styled from "styled-components/macro";
+import styled, { css } from "styled-components/macro";
 import {
     AllOps,
     AtomicRelation,
@@ -8,12 +8,23 @@ import {
 import { RenderRel } from ".";
 import { Atom } from "./Atom";
 import { CSSVarNames } from "../../style/CSSVariables";
+import { RelationContainer } from "./components/RelationInteraction";
 
-const ConverseContainer = styled.div`
+export const converseStyles = `
     background: ${CSSVarNames.neg};
-    border: #6968b8;
+    &:not(:has(&:hover)):hover {
+        box-shadow: rgba(256, 256, 256, 0.25) 0px 54px 55px,
+            rgba(256, 256, 256, 0.12) 0px -12px 30px,
+            rgba(256, 256, 256, 0.12) 0px 4px 6px,
+            rgba(256, 256, 256, 0.17) 0px 12px 13px,
+            rgba(256, 256, 256, 0.09) 0px -3px 5px;
+    }
+`;
+
+export const ConverseContainer = styled(RelationContainer)`
     padding: 8px;
     width: fit-content;
+    ${converseStyles}
 `;
 
 // Converse of an atomic relation is handled specially

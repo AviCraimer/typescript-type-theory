@@ -2,12 +2,13 @@ import styled from "styled-components/macro";
 import { AllOps, SpecificComp } from "../../logic/syntaxTree";
 import { RenderRel } from ".";
 import { CSSVarNames } from "../../style/CSSVariables";
+import { RelationContainer } from "./components/RelationInteraction";
 
 type Props = {
     children: SpecificComp<AllOps["comp"]>;
 };
 
-const CompositionContainer = styled.div`
+const CompositionContainer = styled(RelationContainer)`
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
