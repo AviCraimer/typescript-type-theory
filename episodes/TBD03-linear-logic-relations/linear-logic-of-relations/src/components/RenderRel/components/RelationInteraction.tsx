@@ -13,6 +13,32 @@ export const RelationContainer = styled.div`
     }
 `;
 
+//Take two (first version below)
+
+type RelInfo = {
+    ID: string;
+    rel: Relation;
+    parentID: string;
+};
+
+type RelStore = {
+    rels: {
+        [id: string]: RelInfo;
+    };
+    selectedRels: string[];
+    selectionMode: "unary" | "binary" | "nary";
+};
+
+// The idea is that every RelRender component has a ref with an uuid and the RelRender actually checks if that id exists in the store and if so it uses the rel there to render.
+
+// This means the RelRender's children gives the initial value for its relation, but the children can be updated later
+
+// I'll also need to clean up when a RelRender is unmounted and remove any unmounted ids from the store.
+
+// e.g., when applying an inference rule to two selected relations I may need to check if they are siblings, so I need the parent id. I also need the parent id to replace the two rels with a new rel by updating the parent's relation after inference. This gives us the ability to do re-writing without rebuilding the whole tree.
+
+//First attempt
+
 // I need to give this some more thought.
 // // TODO: Some of this is going to need to go in RelRender
 // type SelectedRel = {

@@ -36,7 +36,7 @@ export const RenderRel = ({ children: relation, root = false }: Props) => {
         );
     } else {
         console.log("\nBad render below:");
-        console.error(children);
+        console.error(relation);
         throw new Error("attempted render of non supported type ");
     }
 };
