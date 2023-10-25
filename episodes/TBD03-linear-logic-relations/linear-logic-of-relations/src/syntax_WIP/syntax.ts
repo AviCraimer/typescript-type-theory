@@ -1,28 +1,33 @@
-// These are used for defining re-write rules. They represent an expression of whatever type is needed to fill the slot they are in.
-// The instance property lets us have more than one expression variable. If two such syntax variables have the same instance in the same expression they represent different occurrences of syntactically identical expressions.
-type ExpressionSyntaxVar = {
-    metaType: "Expression syntax variable";
-    instance: number | string;
-};
+import {
+    Expr,
+    MetaExpr,
+    ExprBroadest,
+    Arity,
+    GetChildrenConstraint,
+} from "./Expr";
 
-type InductiveFormer<T> = {
-    name: string;
-    exprType: T; // The type of expression formed by the inductive former.
-    //Below: used for accessor object to build expresses quickly
+type ExprFormer<ExpT extends ExprBroadest> = {
+    name: ExpT["type"];
+    arity: ExpT["arity"];
+    exprType: ExpT;
+    // Below: a shorter name suitable for a programming interface
     keyName: string;
-    arity: "nullary" | "unary" | "binary" | "n-ary";
 
     // A string value is for a fixed symbol, e.g., '+'
     // The finite key is for a fixed set of strings that are allowed, which are provided to the instance
     // The infinite key is for unbounded sets of numbers of strings, e.g., for variables names or numeric constants.
-    symbol: string | { finite: Set<string> } | { infinite: number | string };
+    symbol: ExpT["arity"] extends 0 ? { useLeaf: true } : string;
     infix: boolean;
 };
 
-type ExpressionFamilyParams<Types> = {
-    name: string; // Name of the family
-    formers: InductiveFormer<Types>[]; //
-};
+type ExprFactory<ExF extends ExprFormer<ExprBroadest>> = (
+    Former: ExF
+) => ExF extends ExprFormer<infer Ex> ? Ex : never;
+
+// type ExpressionFamilyParams<Types> = {
+//     name: string; // Name of the family
+//     formers: InductiveFormer<Types>[]; //
+// };
 
 type Expression<Types, ExpF extends ExpressionFamilyParams<Types>> = {
     metaType: "Expression";

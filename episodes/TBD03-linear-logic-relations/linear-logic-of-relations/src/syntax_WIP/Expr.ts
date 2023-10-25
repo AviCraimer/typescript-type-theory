@@ -1,8 +1,15 @@
-import { NoInstance } from "./Utility";
+import {
+    Assert,
+    DistributiveUnion,
+    NoInstance,
+    ResolveType,
+    ShallowDistributeUnion,
+    TypeEq,
+} from "./Utility";
 
 export type Arity = 0 | 1 | 2 | 3 | "n";
 
-type GetChildrenConstraint<N extends Arity> = N extends 0
+export type GetChildrenConstraint<N extends Arity> = N extends 0
     ? []
     : N extends 1
     ? [unknown]
@@ -54,13 +61,26 @@ export type Expr<
     leaf: ChildTypes extends [] ? any : undefined;
 };
 
+type UniformChildrenAllArities<T extends {}> =
+    | []
+    | [T]
+    | [T, T]
+    | [T, T, T]
+    | T[];
+
+export type ExprBroadest<T extends {} = {}> = Expr<
+    string,
+    Arity,
+    UniformChildrenAllArities<T>
+>;
+
 // example,
 
 // Number
 // Numbers as nullary expressions
 // plus and minus as binary expressions
 
-type MyNumber = Expr<"Number", 0, []> & { leaf: number };
+export type MyNumber = Expr<"Number", 0, []> & { leaf: number };
 
 const five: MyNumber = {
     metaType: "expression",
@@ -75,9 +95,17 @@ type NumberExprType = "Number" | "Plus" | "Minus";
 
 type NumberExpr = Expr<NumberExprType, 0 | 2, [] | [NumberExpr, NumberExpr]>;
 
-type Plus = Expr<"Plus", 2, [NumberExpr, NumberExpr]>;
+export type NumberExpr2 = ShallowDistributeUnion<Plus | Minus | MyNumber>;
 
-type Minus = Expr<"Minus", 2, [NumberExpr, NumberExpr]>;
+type IsTheSame2 = Assert<
+    TypeEq<DistributiveUnion<Plus | Minus | MyNumber>, Plus | Minus | MyNumber>
+>;
+
+type IsTheSame = Assert<TypeEq<NumberExpr, NumberExpr2>>;
+
+export type Plus = Expr<"Plus", 2, [NumberExpr2, NumberExpr2]>;
+
+export type Minus = Expr<"Minus", 2, [NumberExpr2, NumberExpr2]>;
 
 const fivePlusFive: Plus = {
     metaType: "expression",
@@ -119,8 +147,4 @@ const metaExpression: NumberMetaExpr = {
 
 type NumberChildTypes = MetaExprChildTypes<NumberMetaExpr>;
 
-type ResolveType<T> = T extends object
-    ? { [K in keyof T]: ResolveType<T[K]> }
-    : T;
-
-//
+// Now for any Expr type union make
