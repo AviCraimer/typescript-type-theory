@@ -1,6 +1,6 @@
 // This is working pretty well. I need to finish testing it, but I think I finally did it!!
 
-import { isEqual } from "lodash";
+import { isEqual, min } from "lodash";
 
 console.log("\n".repeat(5));
 
@@ -38,20 +38,32 @@ type STTerm = {
     term: Term;
 };
 
-function shift(offset: number, cutoff: number, t: Term): Term {
+// TODO: Not working, need to write some unit tests
+function shift(
+    offset: number,
+    t: Term,
+    minIndex: number = 0,
+    maxIndex: number = Infinity
+): Term {
+    console.log(t);
+    console.log(t.index >= minIndex && t.index <= maxIndex);
+    console.log(t.index + offset);
+
     switch (t.syntax) {
         case "Var":
-            return t.index >= cutoff ? { ...t, index: t.index + offset } : t;
+            return t.index >= minIndex && t.index <= maxIndex
+                ? { ...t, index: t.index + offset }
+                : t;
         case "Abs":
             return {
                 ...t,
-                body: shift(offset, cutoff + 1, t.body),
+                body: shift(offset, t.body, minIndex + 1, maxIndex + 1),
             };
         case "App":
             return {
                 ...t,
-                func: shift(offset, cutoff, t.func),
-                arg: shift(offset, cutoff, t.arg),
+                func: shift(offset, t.func, minIndex, maxIndex),
+                arg: shift(offset, t.arg, minIndex, maxIndex),
             };
         default:
             return t;
@@ -94,11 +106,31 @@ function mkAbs(body: STTerm, indexInCtx: number): STTerm {
         .slice(0, indexInCtx)
         .concat(context.slice(indexInCtx + 1));
 
+    let shiftedTerm = term;
+    if (indexInCtx !== 0) {
+        // When the head variable in the context is bound, no shifting is needed.
+
+        // Free vars in the context that have an index greater than indexInCtx don't change in the term
+        // Their indexes are shifted down one in the context, but this is balanced by the indexes in the term being shifted +1 by the new outer lambda
+        // However, free vars in the context that have an index less than indexInCtx do not shift within the context so the indexes of that variable in the term need be shifted +1 to account for the new outer lambda binder.
+        const shiftedContextVars = shift(1, term, 0, indexInCtx - 1);
+        // TODO: this isn't working -- seems to be a problem with shift
+
+        // The bound variable is not shifted by the new lambda binder.
+        // However, it is shifted downwards when a free variable is moved from deeper inside the context.
+
+        const shiftedTerm = shift(
+            -indexInCtx,
+            shiftedContextVars,
+            indexInCtx,
+            indexInCtx
+        );
+    }
     // Create the abstraction and shift the term inside the body
     const newTerm: Term = {
         syntax: "Abs",
         type: [paramType, term.type],
-        body: shift(-1, indexInCtx, term),
+        body: shiftedTerm,
         paramName: context[indexInCtx]?.name ?? "",
     };
 
@@ -134,7 +166,7 @@ function mkApp(func: STTerm, arg: STTerm): STTerm {
         newCtx = [...funcCtx, ...argCtx];
 
         // Shift the indices of the argument term
-        newArg = shift(funcCtx.length, 0, argTerm);
+        newArg = shift(funcCtx.length, argTerm, 0);
     }
 
     const appTerm: App = {
@@ -156,6 +188,20 @@ const toStringDeBruijin = (term: Term): string => {
             return String(term.index);
         } else if (term.syntax === "Abs") {
             return `[λ${inner(term.body)}]`;
+        } else {
+            return `(${inner(term.func)})(${inner(term.arg)})`;
+        }
+    };
+
+    return inner(term);
+};
+
+const toStringNames = (term: Term): string => {
+    const inner = (term: Term): string => {
+        if (term.syntax === "Var") {
+            return String(term.name);
+        } else if (term.syntax === "Abs") {
+            return `[λ${term.paramName}.${inner(term.body)}]`;
         } else {
             return `(${inner(term.func)})(${inner(term.arg)})`;
         }
@@ -200,7 +246,7 @@ function substitute(target: number, replacement: Term, receiver: Term): Term {
                 ...receiver,
                 body: substitute(
                     target + 1,
-                    shift(1, 0, replacement),
+                    shift(1, replacement, 0),
                     receiver.body
                 ),
             };
@@ -222,7 +268,7 @@ function betaReduce(t: Term): Term {
 
             // Then apply argument
             if (func.syntax === "Abs") {
-                return betaReduce(substitute(0, shift(1, 0, arg), func.body));
+                return betaReduce(substitute(0, shift(1, arg, 0), func.body));
             } else {
                 throw new Error("Type error, application not a function.");
             }
@@ -272,7 +318,8 @@ const lam = {
     v: mkVar,
     ap: mkApp,
     ab: mkAbs,
-    toStr: toStringDeBruijin,
+    toStr: (x: STTerm) =>
+        `${toStringDeBruijin(x.term)}\n${toStringNames(x.term)}\n`,
 };
 
 // TESTS
@@ -289,8 +336,21 @@ const y = mkVar(myContext, 1);
 
 const z = mkVar(myContext, 2);
 
-const xy = lam.ab(lam.ap(z, x), 0);
+const zx = lam.ap(z, x);
+console.log(zx.context.map((x) => x.name));
+console.log(lam.toStr(zx));
 
-console.log(xy);
+// const lamxy = lam.ab(zx, 0);
+// console.log(lamxy.context.map((x) => x.name));
+// console.log(lam.toStr(lamxy));
+
+// const lamZlamXY = lam.ab(lamxy, 1);
+// console.log(lamZlamXY.context.map((x) => x.name));
+// console.log(lam.toStr(lamZlamXY));
+
+// Binding the z first
+const lamZX = lam.ab(zx, 2);
+console.log(lamZX.context.map((x) => x.name));
+console.log(lam.toStr(lamZX));
 
 export {};

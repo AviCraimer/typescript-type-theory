@@ -4967,7 +4967,7 @@
           function meanBy(array, iteratee2) {
             return baseMean(array, getIteratee(iteratee2, 2));
           }
-          function min(array) {
+          function min2(array) {
             return array && array.length ? baseExtremum(array, identity, baseLt) : undefined2;
           }
           function minBy(array, iteratee2) {
@@ -5232,7 +5232,7 @@
           lodash.maxBy = maxBy;
           lodash.mean = mean;
           lodash.meanBy = meanBy;
-          lodash.min = min;
+          lodash.min = min2;
           lodash.minBy = minBy;
           lodash.stubArray = stubArray;
           lodash.stubFalse = stubFalse;
@@ -5480,18 +5480,21 @@
   // episodes/TBD04-lambda-js-functions.ts/index.ts
   var import_lodash = __toESM(require_lodash());
   console.log("\n".repeat(5));
-  function shift(offset, cutoff, t) {
+  function shift(offset, t, minIndex = 0, maxIndex = Infinity) {
+    console.log(t);
+    console.log(t.index >= minIndex && t.index <= maxIndex);
+    console.log(t.index + offset);
     switch (t.syntax) {
       case "Var":
-        return t.index >= cutoff ? __spreadProps(__spreadValues({}, t), { index: t.index + offset }) : t;
+        return t.index >= minIndex && t.index <= maxIndex ? __spreadProps(__spreadValues({}, t), { index: t.index + offset }) : t;
       case "Abs":
         return __spreadProps(__spreadValues({}, t), {
-          body: shift(offset, cutoff + 1, t.body)
+          body: shift(offset, t.body, minIndex + 1, maxIndex + 1)
         });
       case "App":
         return __spreadProps(__spreadValues({}, t), {
-          func: shift(offset, cutoff, t.func),
-          arg: shift(offset, cutoff, t.arg)
+          func: shift(offset, t.func, minIndex, maxIndex),
+          arg: shift(offset, t.arg, minIndex, maxIndex)
         });
       default:
         return t;
@@ -5520,10 +5523,20 @@
       throw new Error("Variable to abstract over is not in context");
     }
     const newContext = context.slice(0, indexInCtx).concat(context.slice(indexInCtx + 1));
+    let shiftedTerm = term;
+    if (indexInCtx !== 0) {
+      const shiftedContextVars = shift(1, term, 0, indexInCtx - 1);
+      const shiftedTerm2 = shift(
+        -indexInCtx,
+        shiftedContextVars,
+        indexInCtx,
+        indexInCtx
+      );
+    }
     const newTerm = {
       syntax: "Abs",
       type: [paramType, term.type],
-      body: shift(-1, indexInCtx, term),
+      body: shiftedTerm,
       paramName: (_c = (_b = context[indexInCtx]) == null ? void 0 : _b.name) != null ? _c : ""
     };
     return {
@@ -5546,7 +5559,7 @@
     let newCtx = argCtx;
     if (!matchingContexts) {
       newCtx = [...funcCtx, ...argCtx];
-      newArg = shift(funcCtx.length, 0, argTerm);
+      newArg = shift(funcCtx.length, argTerm, 0);
     }
     const appTerm = {
       syntax: "App",
@@ -5571,11 +5584,25 @@
     };
     return inner(term);
   };
+  var toStringNames = (term) => {
+    const inner = (term2) => {
+      if (term2.syntax === "Var") {
+        return String(term2.name);
+      } else if (term2.syntax === "Abs") {
+        return `[\u03BB${term2.paramName}.${inner(term2.body)}]`;
+      } else {
+        return `(${inner(term2.func)})(${inner(term2.arg)})`;
+      }
+    };
+    return inner(term);
+  };
   var lam = {
     v: mkVar,
     ap: mkApp,
     ab: mkAbs,
-    toStr: toStringDeBruijin
+    toStr: (x2) => `${toStringDeBruijin(x2.term)}
+${toStringNames(x2.term)}
+`
   };
   var myContext = [
     { type: "Ind", name: "x" },
@@ -5585,8 +5612,12 @@
   var x = mkVar(myContext, 0);
   var y = mkVar(myContext, 1);
   var z = mkVar(myContext, 2);
-  var xy = lam.ab(lam.ap(z, x), 0);
-  console.log(xy);
+  var zx = lam.ap(z, x);
+  console.log(zx.context.map((x2) => x2.name));
+  console.log(lam.toStr(zx));
+  var lamZX = lam.ab(zx, 2);
+  console.log(lamZX.context.map((x2) => x2.name));
+  console.log(lam.toStr(lamZX));
 })();
 /*! Bundled license information:
 
