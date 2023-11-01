@@ -1,6 +1,6 @@
-/js-compiled/**/**.*
-/js-compiled/browser/**
-/js-compiled/node/**
+js-compiled
+js-compiled
+js-compiled
 
 
 # Logs
