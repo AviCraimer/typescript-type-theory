@@ -9,7 +9,9 @@
         "once": "node ./build",
         "start": "nodemon ./js-compiled/node/index.js",
         "e01": "npm run once -- e01 && concurrently \"npm run build -- e01\" \"npm run start\" ",
-        "e02": "node -e  \"\nconsole.log('Types only for Episode 2')\n\""
+        "e02": "node -e  \"\nconsole.log('Types only for Episode 2')\n\"",
+        "e03": "node -e  \"\nconsole.log('Types only for Episode 3')\n\"",
+        "e04": "node -e  \"\nconsole.log('Types only for Episode 4')\n\""
     },
     "repository": {
         "type": "git",
