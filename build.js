@@ -16,7 +16,9 @@ const srcDir = path.join(__dirname, "episodes");
 const distDir = path.join(__dirname, "js-compiled");
 let emoji = "😉";
 
-const episode = process.argv[process.argv.length - 1];
+const watchFlag = process.argv.find((el) => el === "-w");
+const episode = process.argv[process.argv.length - 1]; // Episode is the last argument
+
 // console.log(inPath);
 let entryPoints = [];
 // if (inPath) {
@@ -122,10 +124,13 @@ function build(evt, changePath) {
 
 // Runtime
 build();
-watch(
-    path.join(__dirname, "episodes"),
-    { recursive: true },
-    function (evt, changePath) {
-        build(evt, changePath);
-    }
-);
+
+if (watchFlag) {
+    watch(
+        path.join(__dirname, "episodes"),
+        { recursive: true },
+        function (evt, changePath) {
+            build(evt, changePath);
+        }
+    );
+}

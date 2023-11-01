@@ -5,8 +5,11 @@
     "main": "index.js",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
-        "build": "node ./build",
-        "start": "nodemon ./js-compiled/node/index.js"
+        "build": "node ./build -w",
+        "once": "node ./build",
+        "start": "nodemon ./js-compiled/node/index.js",
+        "e01": "npm run once -- e01 && concurrently \"npm run build -- e01\" \"npm run start\" ",
+        "e02": "node -e  \"\nconsole.log('Types only for Episode 2')\n\""
     },
     "repository": {
         "type": "git",
@@ -29,6 +32,7 @@
         "@types/lodash": "^4.14.176",
         "@types/node": "^16.11.6",
         "@types/uuid": "^9.0.0",
+        "concurrently": "^8.2.2",
         "esbuild": "^0.16.12",
         "fs-extra": "^10.0.0",
         "glob": "^7.2.0",
